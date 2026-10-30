@@ -1672,7 +1672,7 @@ function renderDeltas(ch) {
     return `<section style="margin-bottom:28px"><div class="h2row"><h2>${sp ? `<a href="${link('specs', d.capability)}" style="color:inherit;text-decoration:none">${esc(d.capability)}</a>` : `${esc(d.capability)} <span class="badge new">new capability</span>`} <span class="row" style="gap:3px">${deltaBadges(d)}</span></h2><div class="row"><button class="small" data-expand="1">Expand all</button><button class="small" data-expand="0">Collapse all</button></div></div>
       ${d.purpose ? `<div class="md" style="margin-bottom:12px">${md(d.purpose)}</div>` : ''}
       ${blocks ? `<div class="reqs">${blocks}</div>` : ''}${ren}
-      ${d.other.length ? `<div class="reqs" style="margin-top:12px">${d.other.map(o => `<details class="req" data-key="d:${esc(ch.key)}:${esc(d.capability)}:§${esc(o.title)}"><summary><span class="rn">${esc(o.title)}</span><span class="rm">section</span></summary><div class="rb md">${md(o.body)}</div></details>`).join('')}</div>` : ''}
+      ${d.other.length ? `<div class="reqs" style="margin-top:12px">${d.other.map(o => `<details class="req" data-key="d:${esc(ch.key)}:${esc(d.capability)}:§${esc(o.title)}" ${state.open.has(`d:${ch.key}:${d.capability}:§${o.title}`) ? 'open' : ''}><summary><span class="rn">${esc(o.title)}</span><span class="rm">section</span></summary><div class="rb md">${md(o.body)}</div></details>`).join('')}</div>` : ''}
     </section>`;
   }).join('');
 }

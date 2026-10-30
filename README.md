@@ -13,6 +13,34 @@ OpenSpec is text first, which suits agents and tires humans. human-spec is the h
 
 ![The human-spec overview: a title block of counts, the lifecycle flow with each active change placed in its stage, and the ledger of active changes, here reading the public Fission-AI/OpenSpec repository](docs/showcase.png)
 
+## The storyline
+
+OpenSpec work moves through the same stages in every repository: a change is proposed, planned, implemented, and archived, and the specs are what remains. human-spec draws each stage, so you can follow the story without reading the files. The pictures below read the public Fission-AI/OpenSpec repository.
+
+**1. How work flows.** A change starts as a proposal, gains tasks and spec deltas, is implemented task by task, and is archived once every task is done. Archiving merges its deltas into the specs. The welcome page draws this flow before any repository is loaded.
+
+![The lifecycle flow as drawn on the welcome page: Drafting, Not started, In progress, Complete, Archived, Specs, with the step between each stage labelled](docs/story-explainer.png)
+
+**2. Where each change stands.** With a repository loaded, the same flow fills with counts, and each active change sits in its stage with its progress bar. Click a stage to filter the ledger beneath it.
+
+![The lifecycle flow on the overview with live counts and a column of change chips under each stage](docs/story-overview-flow.png)
+
+**3. The work inside a change.** A change page shows the proposal, the tasks grouped by section with their progress, the design notes, and the files in the folder.
+
+![A change page on the tasks tab: sections of checklist items with a progress bar per section](docs/story-change.png)
+
+**4. What a change proposes.** Spec deltas list the requirements a change adds, modifies, removes or renames, capability by capability, with a word-level diff of each modified requirement against the current spec.
+
+![The deltas tab of a change: a modified requirement shown as a word-level diff against the current spec](docs/story-deltas.png)
+
+**5. What the changes touch.** The impact flow draws the active changes on the left and the capabilities on the right, with a band per spec delta coloured by kind. Hover a change to see only what it touches, or switch to the matrix.
+
+![The impact flow with one change hovered: its bands and the capabilities it touches stay bright while the rest fade](docs/story-impact.png)
+
+**6. How a requirement got here.** Once a change is archived, its deltas live on in the specs. Each requirement opens with a lineage strip of the archived changes that added, modified or renamed it, followed by the pending edits still in flight.
+
+![A requirement on the specs view, opened to show its lineage strip: dated markers for each archived change that shaped it](docs/story-lineage.png)
+
 ## Open it
 
 **Straight from disk.** Open `index.html` in Chrome or Edge. The folder picker and live refresh work from a `file://` address.
@@ -50,7 +78,8 @@ The page exposes `window.OSV` with `loadFiles(files, label)`, where `files` is a
 human-spec/
 ├── index.html        the whole application
 ├── docs/
-│   └── showcase.png  overview screenshot used in this README
+│   ├── showcase.png  overview screenshot used in this README
+│   └── story-*.png   one screenshot per stage of the storyline above
 ├── LICENSE           MIT
 └── README.md
 ```

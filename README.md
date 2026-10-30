@@ -4,6 +4,8 @@ An OpenSpec viewer. One HTML file, no build step, no dependencies. Point it at a
 
 OpenSpec is text first, which suits agents and tires humans. human-spec is the human side: a read-only dashboard for keeping an eye on the state of the specs and the progress of the work.
 
+![The human-spec overview: a title block of counts and a ledger of active changes grouped by state, here reading the public Fission-AI/OpenSpec repository](docs/showcase.png)
+
 ## Open it
 
 **Straight from disk.** Open `index.html` in Chrome or Edge. The folder picker and live refresh work from a `file://` address.
@@ -39,8 +41,10 @@ The page exposes `window.OSV` with `loadFiles(files, label)`, where `files` is a
 
 ```
 human-spec/
-├── index.html   the whole application
-├── LICENSE      MIT
+├── index.html        the whole application
+├── docs/
+│   └── showcase.png  overview screenshot used in this README
+├── LICENSE           MIT
 └── README.md
 ```
 

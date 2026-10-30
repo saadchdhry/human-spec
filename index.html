@@ -1248,11 +1248,15 @@ async function checkLocal() {
   try {
     const { files, sig } = await readHandleFiles(state.source.osHandle);
     if (sig !== state.source.sig) { state.source.sig = sig; applyLoad({ source: state.source, files }); }
-  } catch (e) { console.warn('refresh failed', e); state.error = 'Lost access to the folder: ' + e.message; setStatus('error'); }
+  } catch (e) { console.warn('refresh failed', e); state.error = 'Lost access to the folder: ' + e.message; setStatus('error'); render(); }
 }
 async function refreshNow() {
   if (!state.source) return;
-  if (state.source.type === 'local') { setStatus('busy', 'rereading…'); const { files, sig } = await readHandleFiles(state.source.osHandle); state.source.sig = sig; applyLoad({ source: state.source, files }); }
+  if (state.source.type === 'local') {
+    setStatus('busy', 'rereading…');
+    try { const { files, sig } = await readHandleFiles(state.source.osHandle); state.source.sig = sig; applyLoad({ source: state.source, files }); }
+    catch (e) { console.warn('refresh failed', e); state.error = 'Lost access to the folder: ' + e.message; setStatus('error'); render(); }
+  }
   else if (state.source.type === 'github') runLoad(() => loadFromGithub(state.source.repo, state.source.token));
   else if (state.source.type === 'files') openSourceDialog();
 }

@@ -400,6 +400,18 @@ kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--rule);border-b
 .dia .node,.dia .band{transition:opacity .12s}
 .dia svg.focus .band:not(.on),.dia svg.focus .node:not(.on){opacity:.12}
 @media (prefers-reduced-motion:reduce){.dia .node,.dia .band{transition:none}}
+.dia-lineage{overflow-x:auto;margin:2px 0 14px;max-width:100%}
+.dia .bl{stroke:var(--rule);stroke-width:1.5}
+.dia .bl.pend{stroke-dasharray:4 3}
+.dia .mkbg{fill:var(--sheet)}
+.dia .mk{stroke-width:2}
+.dia .mk.k-add{fill:var(--good);stroke:var(--good)}
+.dia .mk.k-mod{fill:var(--sheet);stroke:var(--warn)}
+.dia .mk.k-ren{fill:var(--violet-soft);stroke:var(--violet)}
+.dia .mk.k-rem{fill:none;stroke:var(--crit);stroke-width:2.5}
+.dia .mk.pend{fill:var(--sheet);stroke-dasharray:2 2}
+.dia .ld{font-size:11.5px;fill:var(--muted)}
+.dia .lr{font-size:11.5px;fill:var(--ink-2)}
 .welcome .dia-lifecycle{margin-bottom:28px}
 </style>
 </head>
@@ -966,6 +978,59 @@ function svgImpact(I) {
   return `<svg viewBox="0 0 ${I.width} ${r1(I.height)}" width="100%" aria-label="Which active change touches which capability" xmlns="http://www.w3.org/2000/svg">${heads}${I.bands.map(band).join('')}${[...I.left, ...I.right].map(node).join('')}</svg>`;
 }
 
+function layoutLineage(sp, r) {
+  const past = [];
+  let cur = r.name;
+  for (let i = sp.history.length - 1; i >= 0; i--) {
+    const ch = sp.history[i];
+    const d = ch.deltas.find(x => x.capability === sp.id);
+    if (!d) continue;
+    const at = { date: ch.archivedDate || '', key: ch.key, change: ch.name, pending: false };
+    const ren = d.renamed.find(x => normName(x.to) === normName(cur));
+    // a delta that renames and modifies one requirement modifies it under the new name, so match both names
+    const names = new Set([normName(cur), ren && normName(ren.from)].filter(Boolean));
+    const has = list => list.some(x => names.has(normName(x.name)));
+    const step = [];
+    if (has(d.modified)) step.push({ ...at, kind: 'mod' });
+    if (ren) { step.push({ ...at, kind: 'ren', from: ren.from, to: ren.to }); cur = ren.from; }
+    const added = has(d.added);
+    if (added) step.push({ ...at, kind: 'add' });
+    past.push(...step);
+    if (added) break;
+  }
+  past.reverse();
+  const n = normName(r.name);
+  const pend = (p, kind) => ({ date: 'pending', key: p.ch.key, change: p.ch.name, pending: true, kind, ...(kind === 'ren' ? { from: p.r.from, to: p.r.to } : {}) });
+  const pending = [
+    ...sp.pendingRenames.filter(p => normName(p.r.from) === n).map(p => pend(p, 'ren')),
+    ...sp.pendingMods.filter(p => normName(p.curName) === n).map(p => pend(p, 'mod')),
+    ...sp.pendingRemoves.filter(p => normName(p.curName) === n).map(p => pend(p, 'rem'))
+  ];
+  const step = 160, y = 36, fitW = step - 12;
+  const events = [...past, ...pending].map((e, i) => ({
+    ...e, x: step * i + step / 2, y,
+    changeText: fitText(e.change, fitW, 6.1),
+    renText: e.kind === 'ren' ? fitText(`${e.from} → ${e.to}`, fitW, 5.6) : ''
+  }));
+  const firstPending = events.findIndex(e => e.pending);
+  return { events, width: step * events.length, height: events.some(e => e.renText) ? 84 : 68, y, splitX: firstPending > 0 ? events[firstPending].x - step / 2 : firstPending === 0 ? 0 : null };
+}
+function svgLineage(G) {
+  const mark = e => {
+    const { x, y } = e, c = `mk k-${e.kind}${e.pending ? ' pend' : ''}`;
+    if (e.kind === 'add') return `<circle class="${c}" cx="${x}" cy="${y}" r="5.5"/>`;
+    if (e.kind === 'mod') return `<circle class="${c}" cx="${x}" cy="${y}" r="5"/>`;
+    if (e.kind === 'ren') return `<path class="${c}" d="M${x} ${y - 7}l7 7l-7 7l-7 -7z"/>`;
+    return `<path class="${c}" d="M${x - 5} ${y - 5}l10 10M${x + 5} ${y - 5}l-10 10"/>`;
+  };
+  const verb = { add: 'added', mod: 'modified', ren: 'renamed', rem: 'removed' };
+  const ev = e => `<g class="ev"><title>${esc(`${verb[e.kind]}${e.kind === 'ren' ? ` from “${e.from}” to “${e.to}”` : ''} in ${e.change}${e.pending ? ' (pending)' : ` on ${e.date}`}`)}</title>${svgT(e.x, 18, e.date || 'undated', 'ld num')}<circle class="mkbg" cx="${e.x}" cy="${e.y}" r="9"/>${mark(e)}<a href="${esc(link('changes', e.key, 'deltas'))}">${svgT(e.x, 60, e.changeText, 'lk')}</a>${e.renText ? svgT(e.x, 76, e.renText, 'lr') : ''}</g>`;
+  const x0 = 8, x1 = G.width - 8, sx = G.splitX;
+  const base = sx === null ? `<line class="bl" x1="${x0}" y1="${G.y}" x2="${x1}" y2="${G.y}"/>`
+    : `${sx > 0 ? `<line class="bl" x1="${x0}" y1="${G.y}" x2="${sx}" y2="${G.y}"/>` : ''}<line class="bl pend" x1="${Math.max(x0, sx)}" y1="${G.y}" x2="${x1}" y2="${G.y}"/>`;
+  return `<svg viewBox="0 0 ${G.width} ${G.height}" width="${G.width}" height="${G.height}" aria-label="Lineage of this requirement" xmlns="http://www.w3.org/2000/svg">${base}${G.events.map(ev).join('')}</svg>`;
+}
+
 // ---------- sources: local folder ----------
 const idb = {
   db: null,
@@ -1511,7 +1576,9 @@ function renderSpecs() {
   const reqHtml = reqs.map(r => {
     const mods = modsFor(r), rems = remsFor(r), rens = rensFor(r);
     const badges = [...mods.map(p => `<a class="badge mod" href="${link('changes', p.ch.key, 'deltas')}" title="Modified by ${esc(p.ch.name)}">modified in ${esc(p.ch.name)}</a>`), ...rems.map(p => `<a class="badge rem" href="${link('changes', p.ch.key, 'deltas')}">removed in ${esc(p.ch.name)}</a>`), ...rens.map(p => `<a class="badge ren" href="${link('changes', p.ch.key, 'deltas')}" title="New name: ${esc(p.r.to)}">renamed in ${esc(p.ch.name)}</a>`)].join(' ');
-    return requirementHtml(r, `spec:${sp.id}:${r.name}`, { badges, cls: rems.length ? 'removed' : '' });
+    const lin = layoutLineage(sp, r);
+    const extra = lin.events.length ? `<div class="dia dia-lineage">${svgLineage(lin)}</div>` : '';
+    return requirementHtml(r, `spec:${sp.id}:${r.name}`, { badges, cls: rems.length ? 'removed' : '', extra });
   }).join('');
   const pendingAdds = sp.pendingAdds.filter(p => !f || p.r.name.toLowerCase().includes(f)).map(p => requirementHtml(p.r, `spec:${sp.id}:+${p.ch.key}:${p.r.name}`, { badges: `<a class="badge add" href="${link('changes', p.ch.key, 'deltas')}">added in ${esc(p.ch.name)}</a>`, cls: 'pending' })).join('');
   const nScen = sp.requirements.reduce((n, r) => n + r.scenarios.length, 0);
@@ -1626,7 +1693,7 @@ function renderProject() {
   parseHash();
   render();
   // programmatic loading hook (used for testing and for embedding): OSV.loadFiles([{path, text, mtime}], 'label')
-  window.OSV = { loadFiles: (files, label = 'in-memory') => applyLoad({ source: { type: 'files', label }, files }), state, parseSpec, parseDelta, parseTasks, buildModel, md, layoutLifecycle, layoutImpact };
+  window.OSV = { loadFiles: (files, label = 'in-memory') => applyLoad({ source: { type: 'files', label }, files }), state, parseSpec, parseDelta, parseTasks, buildModel, md, layoutLifecycle, layoutImpact, layoutLineage };
   // whole-page drop target
   document.body.addEventListener('dragover', e => { if (e.dataTransfer.types.includes('Files')) e.preventDefault(); });
   document.body.addEventListener('drop', async e => {

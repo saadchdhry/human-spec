@@ -40,5 +40,14 @@ The page exposes `window.OSV` with `loadFiles(files, label)`, where `files` is a
 ```
 human-spec/
 ├── index.html   the whole application
+├── LICENSE      MIT
 └── README.md
 ```
+
+## License
+
+MIT. See [LICENSE](LICENSE). Use it, change it, ship it, commercially or not; keep the copyright notice.
+
+The name "human-spec" and the human-spec.dev domain are not covered by the license. Forks are welcome, but should not present themselves as the official site or project.
+
+Fonts are loaded from Google Fonts: [Archivo](https://fonts.google.com/specimen/Archivo) and [Source Serif 4](https://fonts.google.com/specimen/Source+Serif+4), both under the SIL Open Font License 1.1.

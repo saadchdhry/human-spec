@@ -385,6 +385,21 @@ kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--rule);border-b
 .dia .pf.done{fill:var(--good)}
 .dia .more{font-size:11.5px;fill:var(--muted)}
 .hn button.small{margin-left:6px}
+.dia-impact svg{min-width:720px}
+.dia .colh{font-size:11.5px;font-weight:600;fill:var(--muted)}
+.dia .nb{fill:var(--ink-2)}
+.dia .node text{fill:var(--ink)}
+.dia .node .cnt{font-size:11.5px;fill:var(--muted)}
+.dia .node .new{font-size:11px;font-weight:600;fill:var(--accent-ink)}
+.dia .band{fill-opacity:.9;stroke-opacity:.45;stroke-width:1}
+.dia .band.k-add{fill:var(--good-soft);stroke:var(--good)}
+.dia .band.k-mod{fill:var(--warn-soft);stroke:var(--warn)}
+.dia .band.k-rem{fill:var(--crit-soft);stroke:var(--crit)}
+.dia .band.k-ren{fill:var(--violet-soft);stroke:var(--violet)}
+.dia .band.k-none{fill:var(--well);stroke:var(--rule)}
+.dia .node,.dia .band{transition:opacity .12s}
+.dia svg.focus .band:not(.on),.dia svg.focus .node:not(.on){opacity:.12}
+@media (prefers-reduced-motion:reduce){.dia .node,.dia .band{transition:none}}
 .welcome .dia-lifecycle{margin-bottom:28px}
 </style>
 </head>
@@ -436,6 +451,7 @@ const state = {
   openOnly: localStorage.getItem('osv.openOnly') === '1',
   deltaView: {},     // key -> 'proposed'|'current'|'diff'
   stageFilter: null, // lifecycle stage the Overview ledger is narrowed to
+  impactView: 'flow', // 'flow'|'matrix' on the Overview
   route: { view: 'overview', id: null, tab: null }
 };
 
@@ -871,6 +887,85 @@ function svgLifecycle(L, { explainer = L.explainer, active = null } = {}) {
   return `<svg viewBox="0 0 ${L.width} ${L.height}" width="100%" aria-label="OpenSpec change lifecycle" xmlns="http://www.w3.org/2000/svg">${arrows}${stages}${explainer ? specsG : `<a href="${esc(link('specs'))}">${specsG}</a>`}</svg>`;
 }
 
+const DELTA_KINDS = [['added', 'add', 'added'], ['modified', 'mod', 'modified'], ['removed', 'rem', 'removed'], ['renamed', 'ren', 'renamed']];
+const IMPACT_MAX_PAIRS = 200;
+function layoutImpact(m) {
+  const chs = m.active.filter(c => c.deltas.length);
+  const pairs = chs.reduce((n, c) => n + c.deltas.length, 0);
+  if (pairs > IMPACT_MAX_PAIRS) return { tooMany: true, pairs };
+  const W = 960, labelW = 230, barW = 10, top = 28, minH = 20;
+  const left = chs.map(ch => ({ side: 'L', id: ch.key, name: ch.name, w: 0, links: [] }));
+  const capMap = new Map();
+  const bands = [];
+  chs.forEach((ch, i) => {
+    for (const d of ch.deltas) {
+      if (!capMap.has(d.capability)) capMap.set(d.capability, { side: 'R', id: d.capability, name: d.capability, ghost: !m.specMap.has(d.capability), firstKey: ch.key, w: 0, links: [] });
+      const cap = capMap.get(d.capability);
+      const kinds = DELTA_KINDS.filter(([prop]) => d[prop].length).map(([prop, kind, label]) => ({ kind, label, n: d[prop].length, v: d[prop].length }));
+      // a delta file with no requirement blocks still deserves a thin visible band
+      for (const k of kinds.length ? kinds : [{ kind: 'none', label: 'requirement changes', n: 0, v: 0.5 }]) {
+        const b = { ch: ch.key, chName: ch.name, cap: cap.id, ...k, src: left[i], dst: cap };
+        bands.push(b); left[i].links.push(b); cap.links.push(b); left[i].w += b.v; cap.w += b.v;
+      }
+    }
+  });
+  const byName = (a, b) => a.name.localeCompare(b.name);
+  let L = [...left].sort(byName);
+  let R = [...capMap.values()].sort((a, b) => (a.ghost - b.ghost) || byName(a, b));
+  const reorder = (nodes, other, far) => {
+    const pos = new Map(other.map((n, i) => [n, i]));
+    const k = new Map(nodes.map(n => { let s = 0, w = 0; for (const b of n.links) { s += pos.get(b[far]) * b.v; w += b.v; } return [n, w ? s / w : 0]; }));
+    return [...nodes].sort((a, b) => ((a.ghost || 0) - (b.ghost || 0)) || (k.get(a) - k.get(b)) || byName(a, b));
+  };
+  for (let it = 0; it < 4; it++) { R = reorder(R, L, 'src'); L = reorder(L, R, 'dst'); }
+  const total = left.reduce((n, x) => n + x.w, 0) || 1;
+  const maxN = Math.max(L.length, R.length);
+  const gap = Math.max(4, Math.min(10, 120 / maxN));
+  const k = Math.max(2, Math.min(16, (560 - gap * (maxN - 1)) / total));
+  const place = (nodes, x) => { let y = top; for (const n of nodes) { n.x = x; n.y = y; n.h = Math.max(minH, n.w * k); y += n.h + gap; } return y - gap; };
+  const xL = labelW, xR = W - labelW - barW;
+  const bottom = Math.max(place(L, xL), place(R, xR));
+  const rank = new Map([...L, ...R].map((n, i) => [n, i]));
+  const kindOrder = ['add', 'mod', 'rem', 'ren', 'none'];
+  const stack = (nodes, far, yKey) => {
+    for (const n of nodes) {
+      let y = n.y + (n.h - n.w * k) / 2;
+      for (const b of [...n.links].sort((a, c) => (rank.get(a[far]) - rank.get(c[far])) || (kindOrder.indexOf(a.kind) - kindOrder.indexOf(c.kind)))) { b.t = b.v * k; b[yKey] = y; y += b.t; }
+    }
+  };
+  stack(L, 'dst', 'y0'); stack(R, 'src', 'y1');
+  for (const b of bands) { b.x0 = xL + barW; b.x1 = xR; }
+  const label = (n, extra) => {
+    const cnt = String(n.links.reduce((s, b) => s + b.n, 0));
+    return { text: fitText(n.name, labelW - 16 - (cnt.length + 1 + extra) * CHAR_W), count: cnt };
+  };
+  for (const n of L) Object.assign(n, label(n, 0));
+  for (const n of R) Object.assign(n, label(n, n.ghost ? 4 : 0));
+  const strip = n => ({ side: n.side, id: n.id, name: n.name, ghost: !!n.ghost, firstKey: n.firstKey, x: n.x, y: n.y, w: barW, h: n.h, text: n.text, count: n.count });
+  return {
+    tooMany: false, pairs, width: W, height: bottom + 8, xL, xR, barW,
+    left: L.map(strip), right: R.map(strip),
+    bands: bands.map(({ src, dst, ...b }) => b)
+  };
+}
+function svgImpact(I) {
+  const node = n => {
+    const href = n.side === 'L' ? link('changes', n.id, 'deltas') : n.ghost ? link('changes', n.firstKey, 'deltas') : link('specs', n.id);
+    const cy = r1(n.y + n.h / 2 + 4);
+    const tail = `<tspan class="cnt num" dx="6">${n.count}</tspan>${n.ghost ? '<tspan class="new" dx="6">new</tspan>' : ''}`;
+    const lab = n.side === 'L'
+      ? `<text x="${n.x - 8}" y="${cy}" text-anchor="end"><tspan>${esc(n.text)}</tspan>${tail}</text>`
+      : `<text x="${n.x + n.w + 8}" y="${cy}"><tspan>${esc(n.text)}</tspan>${tail}</text>`;
+    return `<g class="node${n.ghost ? ' ghost' : ''}" ${n.side === 'L' ? 'data-ch' : 'data-cap'}="${esc(n.id)}"><title>${esc(`${n.name}: ${plural(+n.count, 'delta')}${n.ghost ? ', new capability' : ''}`)}</title><rect class="nb" x="${n.x}" y="${r1(n.y)}" width="${n.w}" height="${r1(n.h)}" rx="1"/><a href="${esc(href)}">${lab}</a></g>`;
+  };
+  const band = b => {
+    const mx = r1((b.x0 + b.x1) / 2), y0 = r1(b.y0), y1 = r1(b.y1), y0b = r1(b.y0 + b.t), y1b = r1(b.y1 + b.t);
+    return `<path class="band k-${b.kind}" data-ch="${esc(b.ch)}" data-cap="${esc(b.cap)}" d="M${b.x0} ${y0}C${mx} ${y0} ${mx} ${y1} ${b.x1} ${y1}L${b.x1} ${y1b}C${mx} ${y1b} ${mx} ${y0b} ${b.x0} ${y0b}Z"><title>${esc(`${b.chName} → ${b.cap}: ${b.n} ${b.label}`)}</title></path>`;
+  };
+  const heads = svgT(I.xL + I.barW, 14, 'Changes', 'colh', 'end') + svgT(I.xR, 14, 'Capabilities', 'colh', 'start');
+  return `<svg viewBox="0 0 ${I.width} ${r1(I.height)}" width="100%" aria-label="Which active change touches which capability" xmlns="http://www.w3.org/2000/svg">${heads}${I.bands.map(band).join('')}${[...I.left, ...I.right].map(node).join('')}</svg>`;
+}
+
 // ---------- sources: local folder ----------
 const idb = {
   db: null,
@@ -1211,6 +1306,19 @@ function wireCommon() {
     $(`.dia-lifecycle [data-stage="${st}"]`)?.focus();
   };
   $('#stageclear') && ($('#stageclear').onclick = () => { state.stageFilter = null; render({ keepScroll: true }); });
+  for (const b of document.querySelectorAll('[data-iv]')) b.onclick = () => { state.impactView = b.dataset.iv; render({ keepScroll: true }); };
+  const im = $('.dia-impact svg');
+  if (im) im.onmouseover = im.onmouseout = e => {
+    for (const x of im.querySelectorAll('.on')) x.classList.remove('on');
+    const hit = e.type === 'mouseover' && e.target.closest('[data-ch],[data-cap]');
+    im.classList.toggle('focus', !!hit);
+    if (!hit) return;
+    const { ch, cap } = hit.dataset;
+    const bands = [...im.querySelectorAll('.band')].filter(b => b === hit || (!(ch && cap) && ((ch && b.dataset.ch === ch) || (cap && b.dataset.cap === cap))));
+    const chs = new Set(bands.map(b => b.dataset.ch)), caps = new Set(bands.map(b => b.dataset.cap));
+    for (const b of bands) b.classList.add('on');
+    for (const n of im.querySelectorAll('.node')) if (n === hit || chs.has(n.dataset.ch) || caps.has(n.dataset.cap)) n.classList.add('on');
+  };
 }
 
 // ---------- welcome / source dialog ----------
@@ -1343,6 +1451,11 @@ function renderOverview() {
   const capIds = [...m.specs.map(s => s.id), ...m.ghostCaps.map(g => g.id)];
   const withDeltas = m.active.filter(c => c.deltas.length);
   const matrix = withDeltas.length ? `<div class="matrix"><table><thead><tr><th>Change</th>${capIds.map(id => `<th>${m.specMap.has(id) ? `<a href="${link('specs', id)}">${esc(id)}</a>` : `${esc(id)} <span class="badge new">new</span>`}</th>`).join('')}<th>Tasks</th></tr></thead><tbody>${withDeltas.map(ch => `<tr><td><a href="${link('changes', ch.key, 'deltas')}">${esc(ch.name)}</a></td>${capIds.map(id => { const d = ch.deltas.find(x => x.capability === id); return `<td>${d ? `<span class="cell">${deltaBadges(d) || '<span class="badge gray">·</span>'}</span>` : ''}</td>`; }).join('')}<td style="min-width:130px">${ch.tasks ? `<div class="row" style="gap:8px;flex-wrap:nowrap"><span class="small num" style="min-width:34px;text-align:right">${pct(ch.tasks.done, ch.tasks.total)}%</span>${bar(ch.tasks.done, ch.tasks.total)}</div>` : '<span class="small muted">no tasks</span>'}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">No active change carries spec deltas.</div>';
+  const impactL = withDeltas.length ? layoutImpact(m) : null;
+  const iv = impactL && !impactL.tooMany ? state.impactView : 'matrix';
+  const ivBtn = (v, l) => `<button class="small ${iv === v ? 'primary' : ''}" data-iv="${v}" aria-pressed="${iv === v}">${l}</button>`;
+  const impactHead = `<div class="h2row"><h2>Impact <span class="hn">${impactL?.tooMany ? `${impactL.pairs} change–capability pairs are too many to draw as a flow, so this is the matrix` : 'which active change touches which capability'}</span></h2>${impactL && !impactL.tooMany ? `<div class="row" style="gap:4px" role="group" aria-label="Impact view">${ivBtn('flow', 'Flow')}${ivBtn('matrix', 'Matrix')}</div>` : ''}</div>`;
+  const impact = iv === 'flow' ? `<div class="dia dia-impact">${svgImpact(impactL)}</div>` : matrix;
   // next open tasks
   const nextUp = inProg.map(ch => { const open = ch.tasks.sections.flatMap(s => s.items.filter(i => !i.done && i.depth === 0).map(i => ({ ...i, sec: s.title }))).slice(0, 3); return open.length ? `<div class="nx"><div class="t"><a href="${link('changes', ch.key, 'tasks')}">${esc(ch.name)}</a><span class="small muted num">${ch.tasks.total - ch.tasks.done} open</span></div><ul>${open.map(i => `<li><span class="cb"></span><span><span class="muted num">${esc(i.id)}</span> ${inline(i.text)}</span></li>`).join('')}</ul></div>` : ''; }).join('');
   // attention
@@ -1366,8 +1479,8 @@ function renderOverview() {
       ${nextUp ? `<div><h2>Next open tasks <span class="hn">first three per change in progress</span></h2>${nextUp}</div>` : ''}
       <div><h2>Needs attention <span class="hn">${m.issues.length ? `${nWarn} warnings, ${nInfo} notes` : 'nothing flagged'}</span></h2>${issues}</div>
     </div>
-    <h2>Impact matrix <span class="hn">which active change touches which capability</span></h2>
-    ${matrix}
+    ${impactHead}
+    ${impact}
     <h2>Capabilities <span class="hn">${plural(m.specs.length, 'spec')}${m.ghostCaps.length ? `, ${m.ghostCaps.length} proposed` : ''}</span></h2>
     <div class="capgrid">${caps || '<div class="empty">No specs yet.</div>'}</div>
     <h2>History <span class="hn">archived changes, newest first</span></h2>
@@ -1513,7 +1626,7 @@ function renderProject() {
   parseHash();
   render();
   // programmatic loading hook (used for testing and for embedding): OSV.loadFiles([{path, text, mtime}], 'label')
-  window.OSV = { loadFiles: (files, label = 'in-memory') => applyLoad({ source: { type: 'files', label }, files }), state, parseSpec, parseDelta, parseTasks, buildModel, md, layoutLifecycle };
+  window.OSV = { loadFiles: (files, label = 'in-memory') => applyLoad({ source: { type: 'files', label }, files }), state, parseSpec, parseDelta, parseTasks, buildModel, md, layoutLifecycle, layoutImpact };
   // whole-page drop target
   document.body.addEventListener('dragover', e => { if (e.dataTransfer.types.includes('Files')) e.preventDefault(); });
   document.body.addEventListener('drop', async e => {

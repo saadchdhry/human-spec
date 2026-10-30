@@ -1,10 +1,12 @@
 # human-spec
 
-Openspec is built for agents. What makes it powerful, makes it difficult for humans to follow.
-Human-specs makes it easier for humans to follow along.
+Openspec is built for agents.
+What makes it powerful, makes it difficult for humans to follow.
+Human-specs gives you a birds eye view to follow along.
 
-I suggest against trying to read openspec. Let agents do their thing. Use human-spec to get the bird's eye view.
- 
+p.s. I do recommend against trying to read openspec. Let agents do their thing.
+
+## What is human-spec
 An OpenSpec viewer. One HTML file, no build step, no dependencies. Point it at any repository that holds an `openspec/` folder and it shows the capabilities and their requirements, the changes in flight and in the archive, the spec deltas each change proposes, and how far its tasks have come.
 
 OpenSpec is text first, which suits agents and tires humans. human-spec is the human side: a read-only dashboard for keeping an eye on the state of the specs and the progress of the work.

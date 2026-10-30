@@ -75,7 +75,7 @@ hr{border:0;border-top:1px solid var(--hair);margin:16px 0}
 
 /* top bar */
 .topbar{position:sticky;top:0;z-index:20;background:var(--sheet);border-bottom:1px solid var(--rule);display:flex;align-items:center;gap:18px;padding:0 22px;min-height:50px;flex-wrap:wrap}
-.brand{font-weight:600;font-stretch:90%;font-size:14.5px;letter-spacing:-.01em;display:flex;align-items:center;gap:9px;white-space:nowrap}
+.brand{color:inherit;text-decoration:none;font-weight:600;font-stretch:90%;font-size:14.5px;letter-spacing:-.01em;display:flex;align-items:center;gap:9px;white-space:nowrap}
 .brand .mark{width:13px;height:16px;border:1.5px solid var(--ink);border-left-width:4px;border-radius:1px;display:inline-block}
 .nav{display:flex;gap:18px;align-self:stretch}
 .nav a{display:inline-flex;align-items:center;gap:5px;text-decoration:none;color:var(--ink-2);font-weight:500;border-bottom:2px solid transparent;margin-bottom:-1px;padding:0 1px;min-height:50px}
@@ -83,14 +83,19 @@ hr{border:0;border-top:1px solid var(--hair);margin:16px 0}
 .nav a.on{color:var(--ink);border-bottom-color:var(--ink)}
 .nav a .c{color:var(--muted);font-weight:400;font-size:12px}
 .src{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--ink-2);flex-wrap:wrap;padding:8px 0}
-.src .chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--rule);border-radius:var(--r);padding:2px 9px;max-width:380px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.src .chip b{color:var(--ink);font-weight:600}
-.src .chip a{margin-left:2px}
+.srcmenu{position:relative}
+.src .chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--rule);border-radius:var(--r);padding:2px 8px 2px 9px;max-width:380px;white-space:nowrap;font:inherit;color:var(--ink-2);background:var(--sheet);cursor:pointer;line-height:1.6}
+.src .chip:hover,.src .chip[aria-expanded="true"]{background:var(--well)}
+.src .chip b{color:var(--ink);font-weight:600;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.chip .caret{width:5px;height:5px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:rotate(45deg);margin:-3px 0 0 1px;flex:none}
+.menu{position:absolute;top:calc(100% + 4px);left:0;min-width:170px;background:var(--sheet);border:1px solid var(--rule);border-radius:var(--r);padding:4px;z-index:30;display:flex;flex-direction:column;box-shadow:0 8px 20px -8px rgba(27,35,64,.35)}
+.menu [role=menuitem]{display:block;width:100%;text-align:left;padding:6px 10px;border:0;background:none;border-radius:2px;color:var(--ink);text-decoration:none;font:inherit;font-size:13px;cursor:pointer;white-space:nowrap}
+.menu [role=menuitem]:hover{background:var(--well)}
+.igrp{display:inline-flex;align-items:center;gap:2px}
 .ibtn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:26px;padding:0;color:var(--ink-2);border-radius:var(--r);text-decoration:none}
 .ibtn:hover{color:var(--ink);background:var(--well)}
-button.ibtn{border-color:transparent;background:transparent}
+button.ibtn{border:0;background:transparent}
 button.ibtn:hover{background:var(--well)}
-.src .ibtn+.ibtn{margin-left:-6px}
 .dot{width:8px;height:8px;border-radius:1px;background:var(--muted);display:inline-block;flex:none}
 .dot.live{background:var(--good)}
 .dot.busy{background:var(--warn);animation:pulse 1s infinite}
@@ -99,6 +104,11 @@ button.ibtn:hover{background:var(--well)}
 @media (prefers-reduced-motion:reduce){.dot.busy{animation:none}.bar i{transition:none}details.req>summary::before{transition:none}}
 label.tgl{display:inline-flex;align-items:center;gap:5px;cursor:pointer;user-select:none}
 label.tgl input{margin:0;accent-color:var(--ink)}
+label.sw input{appearance:none;-webkit-appearance:none;width:28px;height:16px;border-radius:8px;background:var(--rule);position:relative;cursor:pointer;flex:none;transition:background .15s}
+label.sw input::after{content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:var(--sheet);transition:transform .15s}
+label.sw input:checked{background:var(--good)}
+label.sw input:checked::after{transform:translateX(12px)}
+@media (prefers-reduced-motion:reduce){label.sw input,label.sw input::after{transition:none}}
 
 /* the sheet */
 main.sheet{max-width:1440px;margin:22px auto 48px;background:var(--sheet);border:1px solid var(--rule);padding:26px 32px 56px;min-height:60vh}
@@ -338,7 +348,7 @@ kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--rule);border-b
 </head>
 <body>
 <header class="topbar">
-  <div class="brand"><span class="mark"></span>human-spec</div>
+  <a class="brand" href="#/overview" title="Overview"><span class="mark"></span>human-spec</a>
   <nav class="nav" id="nav"></nav>
   <div class="src" id="srcbar"></div>
 </header>
@@ -1033,6 +1043,7 @@ const ICONS = {
   light: '<svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="3.2"/><path d="M8 1.5v1.6M8 12.9v1.6M1.5 8h1.6M12.9 8h1.6M3.4 3.4l1.1 1.1M11.5 11.5l1.1 1.1M3.4 12.6l1.1-1.1M11.5 4.5l1.1-1.1"/></svg>',
   dark: '<svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M13.5 9.8A5.6 5.6 0 0 1 6.2 2.5a5.6 5.6 0 1 0 7.3 7.3z"/></svg>',
   system: '<svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.75" y="2.75" width="12.5" height="8.5" rx="1"/><path d="M5.5 13.5h5M8 11.25v2.25"/></svg>',
+  refresh: '<svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.3 8a5.3 5.3 0 1 1-1.55-3.75"/><path d="M13.6 2.4v3.2h-3.2"/></svg>',
   github: '<svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M8 .2a8 8 0 0 0-2.53 15.59c.4.07.55-.17.55-.38v-1.49c-2.23.48-2.7-.95-2.7-.95-.36-.92-.89-1.17-.89-1.17-.73-.5.06-.49.06-.49.8.06 1.23.83 1.23.83.71 1.22 1.87.87 2.33.66.07-.52.28-.87.5-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.7 7.7 0 0 1 4 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8 8 0 0 0 8 .2z"/></svg>'
 };
 const REPO_URL = 'https://github.com/saadchdhry/human-spec';
@@ -1041,21 +1052,28 @@ function applyTheme(t) {
   if (t === 'system') { delete document.documentElement.dataset.theme; localStorage.removeItem('osv.theme'); }
   else { document.documentElement.dataset.theme = t; localStorage.setItem('osv.theme', t); }
 }
+let srcMenuOpen = false;
 function renderSrcBar() {
   const s = state.source;
   const dot = `<span class="dot ${state.status === 'live' ? 'live' : state.status === 'busy' ? 'busy' : state.status === 'error' ? 'err' : ''}" title="${esc(state.statusMsg || state.status)}"></span>`;
-  const chip = s ? `<span class="chip" title="${esc(s.label)}">${dot}<b>${esc(s.label)}</b>${s.type === 'github' ? ` <a href="${esc(s.url)}" target="_blank" rel="noopener">GitHub</a>` : ''}</span>` : `<span class="chip">${dot}No source</span>`;
+  const menu = srcMenuOpen ? `<div class="menu" role="menu"><button role="menuitem" id="srcbtn">${s ? 'Change source…' : 'Open source…'}</button>${s && s.type === 'github' ? `<a role="menuitem" href="${esc(s.url)}" target="_blank" rel="noopener">Open on GitHub</a>` : ''}</div>` : '';
+  const chip = `<div class="srcmenu"><button class="chip" id="srcchip" aria-haspopup="menu" aria-expanded="${srcMenuOpen}" title="${s ? esc(s.label) : 'No source loaded'}">${dot}${s ? `<b>${esc(s.label)}</b>` : 'No source'}<span class="caret"></span></button>${menu}</div>`;
   const when = state.loadedAt ? `<span class="muted" title="${new Date(state.loadedAt).toLocaleString()}">${state.status === 'busy' ? esc(state.statusMsg || 'loading…') : 'read ' + ago(state.loadedAt)}</span>` : '';
-  const auto = s && s.type !== 'files' ? `<label class="tgl" title="${s.type === 'local' ? 'Re-read the folder every 3 s and redraw when a file changes' : 'Re-check GitHub every 90 s'}"><input type="checkbox" id="autochk" ${state.auto ? 'checked' : ''}> Live</label>` : '';
-  $('#srcbar').innerHTML = `${chip}${when}${auto}${s ? `<button class="small" id="refreshbtn" title="Read the source again now">Reread</button>` : ''}<button class="small" id="srcbtn">${s ? 'Change source' : 'Open source'}</button><button class="small ghost ibtn" id="themebtn" title="Theme: ${{ light: 'light', dark: 'dark', system: 'follows the system' }[themeSetting()]}. Click for ${THEMES[(THEMES.indexOf(themeSetting()) + 1) % 3]}." aria-label="Theme: ${themeSetting()}">${ICONS[themeSetting()]}</button><a class="ibtn" href="${REPO_URL}" target="_blank" rel="noopener" title="human-spec on GitHub" aria-label="human-spec on GitHub">${ICONS.github}</a>`;
-  $('#srcbtn').onclick = openSourceDialog;
+  const auto = s && s.type !== 'files' ? `<label class="tgl sw" title="${s.type === 'local' ? 'Re-read the folder every 3 s and redraw when a file changes' : 'Re-check GitHub every 90 s'}"><input type="checkbox" id="autochk" ${state.auto ? 'checked' : ''}> Live</label>` : '';
+  const nextTheme = THEMES[(THEMES.indexOf(themeSetting()) + 1) % 3];
+  const icons = `<span class="igrp"><a class="ibtn" href="${REPO_URL}" target="_blank" rel="noopener" title="human-spec on GitHub" aria-label="human-spec on GitHub">${ICONS.github}</a>${s ? `<button class="ibtn" id="refreshbtn" title="Read the source again now" aria-label="Reread now">${ICONS.refresh}</button>` : ''}<button class="ibtn" id="themebtn" title="Theme: ${{ light: 'light', dark: 'dark', system: 'follows the system' }[themeSetting()]}. Click for ${nextTheme}." aria-label="Theme: ${themeSetting()}">${ICONS[themeSetting()]}</button></span>`;
+  $('#srcbar').innerHTML = `${chip}${when}${auto}${icons}`;
+  $('#srcchip').onclick = e => { e.stopPropagation(); srcMenuOpen = !srcMenuOpen; renderSrcBar(); if (srcMenuOpen) $('#srcbtn')?.focus(); };
+  $('#srcbtn') && ($('#srcbtn').onclick = () => { srcMenuOpen = false; renderSrcBar(); openSourceDialog(); });
   $('#refreshbtn') && ($('#refreshbtn').onclick = refreshNow);
   $('#autochk') && ($('#autochk').onchange = e => { state.auto = e.target.checked; localStorage.setItem('osv.auto', state.auto ? '1' : '0'); scheduleAuto(); });
   $('#themebtn').onclick = () => {
-    applyTheme(THEMES[(THEMES.indexOf(themeSetting()) + 1) % 3]);
+    applyTheme(nextTheme);
     renderSrcBar();
   };
 }
+document.addEventListener('click', e => { if (srcMenuOpen && !e.target.closest('.srcmenu')) { srcMenuOpen = false; renderSrcBar(); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && srcMenuOpen) { srcMenuOpen = false; renderSrcBar(); $('#srcchip')?.focus(); } });
 function render({ keepScroll } = {}) {
   const y = window.scrollY;
   renderNav(); renderSrcBar();

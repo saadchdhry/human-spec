@@ -1006,7 +1006,7 @@ function layoutLineage(sp, r) {
     ...sp.pendingMods.filter(p => normName(p.curName) === n).map(p => pend(p, 'mod')),
     ...sp.pendingRemoves.filter(p => normName(p.curName) === n).map(p => pend(p, 'rem'))
   ];
-  const step = 160, y = 36, fitW = step - 12;
+  const step = 184, y = 36, fitW = step - 30;
   const events = [...past, ...pending].map((e, i) => ({
     ...e, x: step * i + step / 2, y,
     changeText: fitText(e.change, fitW, 6.1),

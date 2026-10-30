@@ -777,20 +777,20 @@ function healthCheck(m) {
   const issues = [];
   const norm = s => s.trim().toLowerCase().replace(/\s+/g, ' ');
   for (const ch of m.active) {
-    if (!ch.proposal.raw) issues.push({ lvl: 'warn', text: `Change <b>${esc(ch.name)}</b> has no proposal.md`, href: `#/changes/${ch.key}` });
-    if (!ch.tasks) issues.push({ lvl: 'info', text: `Change <b>${esc(ch.name)}</b> has no tasks.md yet (still being drafted)`, href: `#/changes/${ch.key}/tasks` });
-    else if (ch.tasks.total === 0) issues.push({ lvl: 'info', text: `Change <b>${esc(ch.name)}</b> has a tasks.md with no checklist items`, href: `#/changes/${ch.key}/tasks` });
-    if (ch.status === 'complete') issues.push({ lvl: 'info', text: `Change <b>${esc(ch.name)}</b> has every task checked but is not archived yet`, href: `#/changes/${ch.key}` });
-    if (!ch.deltas.length && ch.tasks) issues.push({ lvl: 'warn', text: `Change <b>${esc(ch.name)}</b> has tasks but no spec deltas under specs/`, href: `#/changes/${ch.key}/deltas` });
+    if (!ch.proposal.raw) issues.push({ lvl: 'warn', text: `Change <b>${esc(ch.name)}</b> has no proposal.md`, href: link('changes', ch.key) });
+    if (!ch.tasks) issues.push({ lvl: 'info', text: `Change <b>${esc(ch.name)}</b> has no tasks.md yet (still being drafted)`, href: link('changes', ch.key, 'tasks') });
+    else if (ch.tasks.total === 0) issues.push({ lvl: 'info', text: `Change <b>${esc(ch.name)}</b> has a tasks.md with no checklist items`, href: link('changes', ch.key, 'tasks') });
+    if (ch.status === 'complete') issues.push({ lvl: 'info', text: `Change <b>${esc(ch.name)}</b> has every task checked but is not archived yet`, href: link('changes', ch.key) });
+    if (!ch.deltas.length && ch.tasks) issues.push({ lvl: 'warn', text: `Change <b>${esc(ch.name)}</b> has tasks but no spec deltas under specs/`, href: link('changes', ch.key, 'deltas') });
     for (const d of ch.deltas) {
       const sp = m.specMap.get(d.capability);
       if (!sp) continue;
       const names = new Set(sp.requirements.map(r => norm(r.name)));
-      for (const r of d.modified) if (!names.has(norm(resolveDeltaName(d, r.name)))) issues.push({ lvl: 'warn', text: `<b>${esc(ch.name)}</b> modifies requirement “${esc(r.name)}” which does not exist in <b>${esc(d.capability)}</b> (name drift?)`, href: `#/changes/${ch.key}/deltas` });
-      for (const r of d.removed) if (!names.has(norm(resolveDeltaName(d, r.name)))) issues.push({ lvl: 'warn', text: `<b>${esc(ch.name)}</b> removes requirement “${esc(r.name)}” which does not exist in <b>${esc(d.capability)}</b>`, href: `#/changes/${ch.key}/deltas` });
-      for (const r of d.added) if (names.has(norm(r.name))) issues.push({ lvl: 'warn', text: `<b>${esc(ch.name)}</b> adds requirement “${esc(r.name)}” but <b>${esc(d.capability)}</b> already has one with that name`, href: `#/changes/${ch.key}/deltas` });
-      for (const r of d.renamed) if (!names.has(norm(r.from))) issues.push({ lvl: 'warn', text: `<b>${esc(ch.name)}</b> renames “${esc(r.from)}” which does not exist in <b>${esc(d.capability)}</b>`, href: `#/changes/${ch.key}/deltas` });
-      for (const r of [...d.added, ...d.modified]) if (!r.scenarios.length) issues.push({ lvl: 'info', text: `<b>${esc(ch.name)}</b>: requirement “${esc(r.name)}” in <b>${esc(d.capability)}</b> has no scenarios`, href: `#/changes/${ch.key}/deltas` });
+      for (const r of d.modified) if (!names.has(norm(resolveDeltaName(d, r.name)))) issues.push({ lvl: 'warn', text: `<b>${esc(ch.name)}</b> modifies requirement “${esc(r.name)}” which does not exist in <b>${esc(d.capability)}</b> (name drift?)`, href: link('changes', ch.key, 'deltas') });
+      for (const r of d.removed) if (!names.has(norm(resolveDeltaName(d, r.name)))) issues.push({ lvl: 'warn', text: `<b>${esc(ch.name)}</b> removes requirement “${esc(r.name)}” which does not exist in <b>${esc(d.capability)}</b>`, href: link('changes', ch.key, 'deltas') });
+      for (const r of d.added) if (names.has(norm(r.name))) issues.push({ lvl: 'warn', text: `<b>${esc(ch.name)}</b> adds requirement “${esc(r.name)}” but <b>${esc(d.capability)}</b> already has one with that name`, href: link('changes', ch.key, 'deltas') });
+      for (const r of d.renamed) if (!names.has(norm(r.from))) issues.push({ lvl: 'warn', text: `<b>${esc(ch.name)}</b> renames “${esc(r.from)}” which does not exist in <b>${esc(d.capability)}</b>`, href: link('changes', ch.key, 'deltas') });
+      for (const r of [...d.added, ...d.modified]) if (!r.scenarios.length) issues.push({ lvl: 'info', text: `<b>${esc(ch.name)}</b>: requirement “${esc(r.name)}” in <b>${esc(d.capability)}</b> has no scenarios`, href: link('changes', ch.key, 'deltas') });
     }
   }
   // two active changes touching the same requirement
@@ -798,15 +798,15 @@ function healthCheck(m) {
   for (const ch of m.active) for (const d of ch.deltas) for (const r of [...d.modified, ...d.removed]) {
     const k = d.capability + '::' + norm(resolveDeltaName(d, r.name)); if (!touch.has(k)) touch.set(k, []); touch.get(k).push(ch);
   }
-  for (const [k, chs] of touch) if (chs.length > 1) issues.push({ lvl: 'warn', text: `Requirement “${esc(k.split('::')[1])}” in <b>${esc(k.split('::')[0])}</b> is touched by ${chs.length} active changes: ${chs.map(c => esc(c.name)).join(', ')}`, href: `#/specs/${k.split('::')[0]}` });
+  for (const [k, chs] of touch) if (chs.length > 1) issues.push({ lvl: 'warn', text: `Requirement “${esc(k.split('::')[1])}” in <b>${esc(k.split('::')[0])}</b> is touched by ${chs.length} active changes: ${chs.map(c => esc(c.name)).join(', ')}`, href: link('specs', k.split('::')[0]) });
   for (const sp of m.specs) {
     const seen = new Set();
     for (const r of sp.requirements) {
-      if (seen.has(norm(r.name))) issues.push({ lvl: 'warn', text: `Spec <b>${esc(sp.id)}</b> has duplicate requirement “${esc(r.name)}”`, href: `#/specs/${sp.id}` });
+      if (seen.has(norm(r.name))) issues.push({ lvl: 'warn', text: `Spec <b>${esc(sp.id)}</b> has duplicate requirement “${esc(r.name)}”`, href: link('specs', sp.id) });
       seen.add(norm(r.name));
-      if (!r.scenarios.length) issues.push({ lvl: 'info', text: `Spec <b>${esc(sp.id)}</b>: requirement “${esc(r.name)}” has no scenarios`, href: `#/specs/${sp.id}` });
+      if (!r.scenarios.length) issues.push({ lvl: 'info', text: `Spec <b>${esc(sp.id)}</b>: requirement “${esc(r.name)}” has no scenarios`, href: link('specs', sp.id) });
     }
-    if (!sp.requirements.length) issues.push({ lvl: 'warn', text: `Spec <b>${esc(sp.id)}</b> has no requirements`, href: `#/specs/${sp.id}` });
+    if (!sp.requirements.length) issues.push({ lvl: 'warn', text: `Spec <b>${esc(sp.id)}</b> has no requirements`, href: link('specs', sp.id) });
   }
   const lvl = { warn: 0, info: 1 };
   return issues.sort((a, b) => lvl[a.lvl] - lvl[b.lvl]);
@@ -1525,7 +1525,7 @@ function renderOverview() {
   const nextUp = inProg.map(ch => { const open = ch.tasks.sections.flatMap(s => s.items.filter(i => !i.done && i.depth === 0).map(i => ({ ...i, sec: s.title }))).slice(0, 3); return open.length ? `<div class="nx"><div class="t"><a href="${link('changes', ch.key, 'tasks')}">${esc(ch.name)}</a><span class="small muted num">${ch.tasks.total - ch.tasks.done} open</span></div><ul>${open.map(i => `<li><span class="cb"></span><span><span class="muted num">${esc(i.id)}</span> ${inline(i.text)}</span></li>`).join('')}</ul></div>` : ''; }).join('');
   // attention
   const nWarn = m.issues.filter(i => i.lvl === 'warn').length, nInfo = m.issues.filter(i => i.lvl === 'info').length;
-  const issues = m.issues.length ? `${m.issues.slice(0, 40).map(i => `<div class="issue"><span class="ic ${i.lvl === 'info' ? 'info' : ''}">${i.lvl === 'info' ? 'i' : '!'}</span><span>${i.text} <a href="${i.href}" class="small">open</a></span></div>`).join('')}${m.issues.length > 40 ? `<div class="small muted" style="padding-top:8px">${m.issues.length - 40} more not shown</div>` : ''}` : '<div class="empty">Deltas match the current specs, every requirement has scenarios, and no change is stuck.</div>';
+  const issues = m.issues.length ? `${m.issues.slice(0, 40).map(i => `<div class="issue"><span class="ic ${i.lvl === 'info' ? 'info' : ''}">${i.lvl === 'info' ? 'i' : '!'}</span><span>${i.text} <a href="${esc(i.href)}" class="small">open</a></span></div>`).join('')}${m.issues.length > 40 ? `<div class="small muted" style="padding-top:8px">${m.issues.length - 40} more not shown</div>` : ''}` : '<div class="empty">Deltas match the current specs, every requirement has scenarios, and no change is stuck.</div>';
   // capabilities
   const caps = m.specs.map(sp => {
     const pend = sp.pendingAdds.length + sp.pendingMods.length + sp.pendingRemoves.length + sp.pendingRenames.length;

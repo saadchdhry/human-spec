@@ -350,6 +350,42 @@ dialog .opts{margin-top:14px}
 .filelist{font-family:var(--mono);font-size:12px;color:var(--ink-2);margin:0;padding-left:18px}
 .filelist li{padding:2px 0}
 kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--rule);border-bottom-width:2px;border-radius:2px;padding:0 4px}
+
+/* diagrams: inline SVG, styled here so both themes apply */
+.dia{margin:0 0 6px}
+.dia svg{display:block;font-family:var(--sans);overflow:visible}
+.dia text{font-size:12.5px;fill:var(--ink-2)}
+.dia a text{fill:var(--accent-ink)}
+.dia a:hover text{text-decoration:underline}
+.dia-lifecycle,.dia-impact{overflow-x:auto}
+.dia-lifecycle svg,.dia-impact svg{width:100%;height:auto}
+.dia-lifecycle svg{min-width:900px}
+.dia .box{fill:var(--well);stroke:var(--rule)}
+.dia .rule{fill:var(--muted)}
+.dia .st-progress .rule{fill:var(--accent)}
+.dia .st-complete .rule{fill:var(--good)}
+.dia .st-draft .rule{fill:var(--warn)}
+.dia .st-untouched .rule{fill:none;stroke:var(--muted);stroke-dasharray:3 2}
+.dia .st-specs .rule{fill:var(--ink)}
+.dia .sl{font-weight:600;fill:var(--ink)}
+.dia .sc{font-size:22px;font-weight:600;fill:var(--ink)}
+.dia .ss{font-size:10.5px;fill:var(--muted)}
+.dia [tabindex][data-stage]{cursor:pointer;outline:none}
+.dia [tabindex][data-stage]:hover .box{stroke:var(--ink-2)}
+.dia [tabindex][data-stage]:focus-visible .box{stroke:var(--accent);stroke-width:2}
+.dia .stage.on .box{stroke:var(--ink);stroke-width:2}
+.dia .arw line{stroke:var(--muted);stroke-width:1.25}
+.dia .arw path,.dia .arw circle{fill:var(--muted)}
+.dia .al{font-size:11px;fill:var(--muted)}
+.dia .cr{fill:var(--sheet);stroke:var(--rule)}
+.dia .chip:hover .cr{stroke:var(--ink-2)}
+.dia .chip text{font-size:12px;fill:var(--ink)}
+.dia .pb{fill:var(--hair)}
+.dia .pf{fill:var(--accent)}
+.dia .pf.done{fill:var(--good)}
+.dia .more{font-size:11.5px;fill:var(--muted)}
+.hn button.small{margin-left:6px}
+.welcome .dia-lifecycle{margin-bottom:28px}
 </style>
 </head>
 <body>
@@ -399,6 +435,7 @@ const state = {
   open: new Set(),   // open <details> keys
   openOnly: localStorage.getItem('osv.openOnly') === '1',
   deltaView: {},     // key -> 'proposed'|'current'|'diff'
+  stageFilter: null, // lifecycle stage the Overview ledger is narrowed to
   route: { view: 'overview', id: null, tab: null }
 };
 
@@ -772,6 +809,68 @@ function renderDiff(a, b) {
   return `<div class="diff">${ops.map(o => o.t === '=' ? esc(o.s) : o.t === '-' ? `<del>${esc(o.s)}</del>` : `<ins>${esc(o.s)}</ins>`).join('')}</div>`;
 }
 
+// ---------- diagrams ----------
+// Pure: layout* turns model data into positioned plain objects (SVG user units), svg* turns a layout into a string.
+const CHAR_W = 6.4; // approximate advance of one character at 12.5px; SVG text cannot be measured without the DOM
+const r1 = n => Math.round(n * 10) / 10;
+function fitText(s, w, cw = CHAR_W) {
+  s = String(s ?? '');
+  const max = Math.max(1, Math.floor(w / cw));
+  return s.length <= max ? s : s.slice(0, Math.max(1, max - 1)).trimEnd() + '…';
+}
+function wrapText(s, w, cw = CHAR_W, maxLines = 2) {
+  const max = Math.max(1, Math.floor(w / cw));
+  const lines = [];
+  for (const word of String(s).split(/\s+/)) {
+    const i = lines.length - 1;
+    if (i >= 0 && (lines[i] + ' ' + word).length <= max) lines[i] += ' ' + word; else lines.push(word);
+  }
+  const kept = lines.length > maxLines ? [...lines.slice(0, maxLines - 1), lines.slice(maxLines - 1).join(' ')] : lines;
+  return kept.map(l => fitText(l, w, cw));
+}
+const svgT = (x, y, s, cls, anchor = 'middle') => `<text x="${r1(x)}" y="${r1(y)}" text-anchor="${anchor}" class="${cls}">${esc(s)}</text>`;
+
+const LIFECYCLE = [['draft', 'Drafting'], ['untouched', 'Not started'], ['progress', 'In progress'], ['complete', 'Complete'], ['archived', 'Archived']];
+const LIFECYCLE_EDGES = ['proposal.md written', 'tasks.md added', 'first task ticked', 'all tasks done', 'openspec archive', 'deltas merged into specs'];
+function layoutLifecycle(m) {
+  const padL = 88, bw = 128, bh = 70, gap = 88, top = 8, chipH = 22, chipGap = 4, maxChips = 6;
+  const boxX = i => padL + i * (bw + gap);
+  let bottom = top + bh;
+  const stages = LIFECYCLE.map(([key, label], i) => {
+    const list = !m ? [] : key === 'archived' ? m.archived : m.active.filter(c => c.status === key);
+    const x = boxX(i);
+    const chips = list.slice(0, maxChips).map((ch, j) => ({
+      key: ch.key, name: ch.name, label: fitText(ch.name, bw - 16, 6.1),
+      x, y: top + bh + 12 + j * (chipH + chipGap), w: bw, h: chipH,
+      done: ch.tasks ? ch.tasks.done : 0, total: ch.tasks ? ch.tasks.total : 0
+    }));
+    const more = Math.max(0, list.length - maxChips);
+    const moreY = top + bh + 12 + chips.length * (chipH + chipGap) + 10;
+    if (chips.length) bottom = Math.max(bottom, more ? moreY + 4 : moreY - 10 - chipGap);
+    return { key, label, x, y: top, w: bw, h: bh, count: m ? list.length : null, chips, more, moreY };
+  });
+  const specs = { key: 'specs', label: 'Specs', x: boxX(5), y: top, w: bw, h: bh, caps: m ? m.stats.specs : null, reqs: m ? m.stats.requirements : null };
+  const arrows = LIFECYCLE_EDGES.map((text, i) => ({ x1: i ? boxX(i - 1) + bw : 6, x2: boxX(i), y: top + bh / 2, entry: !i, text, lines: wrapText(text, gap - 10, 5.6) }));
+  return { explainer: !m, width: boxX(5) + bw + 8, height: bottom + 8, stages, specs, arrows };
+}
+function svgLifecycle(L, { explainer = L.explainer, active = null } = {}) {
+  const box = s => `<rect class="box" x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" rx="3"/><rect class="rule" x="${s.x}" y="${s.y}" width="${s.w}" height="3"/>`;
+  const arrows = L.arrows.map(a => `<g class="arw"><title>${esc(a.text)}</title>${a.entry ? `<circle cx="${a.x1}" cy="${a.y}" r="3"/>` : ''}<line x1="${a.x1 + 4}" y1="${a.y}" x2="${a.x2 - 8}" y2="${a.y}"/><path d="M${a.x2 - 2} ${a.y}l-7 -4v8z"/>${a.lines.map((l, i) => svgT((a.x1 + a.x2) / 2, a.y + 16 + i * 13, l, 'al')).join('')}</g>`).join('');
+  const stages = L.stages.map(s => {
+    const cx = s.x + s.w / 2, on = !explainer && s.key === active;
+    const head = explainer ? svgT(cx, s.y + s.h / 2 + 5, s.label, 'sl') : svgT(cx, s.y + 24, s.label, 'sl') + svgT(cx, s.y + 56, s.count, 'sc num');
+    const tip = explainer ? s.label : `${s.label}: ${plural(s.count, 'change')}. ${on ? 'Click to show every stage.' : 'Click to filter the ledger.'}`;
+    const g = `<g class="stage st-${s.key}${on ? ' on' : ''}" data-stage="${s.key}"${explainer ? '' : ` tabindex="0" role="button" aria-pressed="${on}"`}><title>${esc(tip)}</title>${box(s)}${head}</g>`;
+    const chips = s.chips.map(c => `<a href="${esc(link('changes', c.key))}" class="chip"><title>${esc(c.name)}${c.total ? ` (${c.done}/${c.total} tasks)` : ''}</title><rect class="cr" x="${c.x}" y="${c.y}" width="${c.w}" height="${c.h}" rx="2"/>${svgT(c.x + 8, c.y + 14, c.label, 'cn', 'start')}${c.total ? `<rect class="pb" x="${c.x + 8}" y="${c.y + c.h - 5}" width="${c.w - 16}" height="2.5"/><rect class="pf${c.done === c.total ? ' done' : ''}" x="${c.x + 8}" y="${c.y + c.h - 5}" width="${r1((c.w - 16) * c.done / c.total)}" height="2.5"/>` : ''}</a>`).join('');
+    return g + chips + (s.more ? svgT(cx, s.moreY, `+${s.more} more`, 'more') : '');
+  }).join('');
+  const sp = L.specs, scx = sp.x + sp.w / 2;
+  const specsBody = explainer ? svgT(scx, sp.y + sp.h / 2 + 5, sp.label, 'sl')
+    : svgT(scx, sp.y + 24, sp.label, 'sl') + svgT(sp.x + 32, sp.y + 50, sp.caps, 'sc num') + svgT(sp.x + 32, sp.y + 63, 'capabilities', 'ss') + svgT(sp.x + 96, sp.y + 50, sp.reqs, 'sc num') + svgT(sp.x + 96, sp.y + 63, 'requirements', 'ss');
+  const specsG = `<g class="stage st-specs"><title>${esc(explainer ? 'Specs: the current truth, one per capability' : `${plural(sp.caps, 'capability', 'capabilities')}, ${plural(sp.reqs, 'requirement')}`)}</title>${box(sp)}${specsBody}</g>`;
+  return `<svg viewBox="0 0 ${L.width} ${L.height}" width="100%" aria-label="OpenSpec change lifecycle" xmlns="http://www.w3.org/2000/svg">${arrows}${stages}${explainer ? specsG : `<a href="${esc(link('specs'))}">${specsG}</a>`}</svg>`;
+}
+
 // ---------- sources: local folder ----------
 const idb = {
   db: null,
@@ -1100,6 +1199,18 @@ function wireCommon() {
   $('#reqsearch') && ($('#reqsearch').oninput = e => { state.reqFilter = e.target.value; render({ keepScroll: true }); setTimeout(() => { const i = $('#reqsearch'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }); });
   for (const b of document.querySelectorAll('[data-expand]')) b.onclick = () => { const open = b.dataset.expand === '1'; for (const d of b.closest('section, main').querySelectorAll('details[data-key]')) { d.open = open; if (open) state.open.add(d.dataset.key); else state.open.delete(d.dataset.key); } };
   for (const b of document.querySelectorAll('[data-dv]')) b.onclick = () => { state.deltaView[b.dataset.key] = b.dataset.dv; render({ keepScroll: true }); };
+  const lc = $('.dia-lifecycle[data-live]');
+  if (lc) lc.onclick = lc.onkeydown = e => {
+    if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
+    const g = e.target.closest('[data-stage]');
+    if (!g || !g.hasAttribute('tabindex') || e.target.closest('a')) return;
+    e.preventDefault();
+    const st = g.dataset.stage;
+    state.stageFilter = state.stageFilter === st ? null : st;
+    render({ keepScroll: true });
+    $(`.dia-lifecycle [data-stage="${st}"]`)?.focus();
+  };
+  $('#stageclear') && ($('#stageclear').onclick = () => { state.stageFilter = null; render({ keepScroll: true }); });
 }
 
 // ---------- welcome / source dialog ----------
@@ -1129,6 +1240,8 @@ function renderWelcome() {
   return `<div class="welcome">
     <h1>human-spec</h1>
     <p class="lede">An OpenSpec viewer: a read-only view of any repository that uses <a href="https://github.com/Fission-AI/OpenSpec" target="_blank" rel="noopener">OpenSpec</a>: the capabilities and their requirements, the changes in flight and in the archive, the spec deltas each change proposes, and how far its tasks have come. Everything runs in this page.</p>
+    <h2>How OpenSpec work flows</h2>
+    <div class="dia dia-lifecycle">${svgLifecycle(layoutLifecycle(null), { explainer: true })}</div>
     ${state.error ? `<div class="err">${esc(state.error)}</div>` : ''}
     ${state.pendingReconnect ? `<div class="recon row spread"><div>Last time you had <b>${esc(state.pendingReconnect.name)}</b> open.</div><button class="primary" id="reconnectbtn">Reconnect</button></div>` : ''}
     ${sourceOptionsHtml()}
@@ -1215,15 +1328,17 @@ function renderOverview() {
     [s.deltas, 'pending spec deltas', `in ${plural(m.active.filter(c => c.deltas.length).length, 'change')}`],
     [s.archived, 'archived', m.archived[0]?.archivedDate ? `last on ${m.archived[0].archivedDate}` : '']
   ];
-  // ledger of active changes, grouped by state
-  const groups = [['progress', 'In progress'], ['untouched', 'Not started'], ['complete', 'Complete, not archived'], ['draft', 'Drafting']];
+  // ledger of active changes, grouped by state, optionally narrowed to one lifecycle stage
+  const sf = state.stageFilter;
+  const groups = [['progress', 'In progress'], ['untouched', 'Not started'], ['complete', 'Complete, not archived'], ['draft', 'Drafting'], ['archived', 'Archived']].filter(([st]) => sf ? st === sf : st !== 'archived');
+  const pool = sf === 'archived' ? m.archived : m.active;
   const lrow = ch => `<a class="lrow" href="${link('changes', ch.key)}">
       <span class="n">${esc(ch.name)}</span>
       <span class="pg">${ch.tasks ? `${bar(ch.tasks.done, ch.tasks.total)}<span class="num">${ch.tasks.done}/${ch.tasks.total}</span>` : '<span class="small muted">no tasks yet</span>'}</span>
       <span class="caps">${ch.deltas.map(d => `<span class="tag">${esc(d.capability)} ${deltaBadges(d)}</span>`).join('')}</span>
       <span class="when">${ch.created ? 'created ' + esc(ch.created) : ch.mtime ? 'updated ' + ago(ch.mtime) : ''}</span>
     </a>`;
-  const ledger = `<div class="ledger">${groups.map(([st, t]) => { const list = m.active.filter(c => c.status === st); return list.length ? `<div class="grp"><span class="pill ${st}"><span class="dot"></span>${t}</span><span class="num">${list.length}</span></div>${list.map(lrow).join('')}` : ''; }).join('')}</div>`;
+  const ledger = `<div class="ledger">${groups.map(([st, t]) => { const list = pool.filter(c => c.status === st); return list.length ? `<div class="grp"><span class="pill ${st}"><span class="dot"></span>${t}</span><span class="num">${list.length}</span></div>${list.map(lrow).join('')}` : ''; }).join('')}</div>`;
   // impact matrix
   const capIds = [...m.specs.map(s => s.id), ...m.ghostCaps.map(g => g.id)];
   const withDeltas = m.active.filter(c => c.deltas.length);
@@ -1243,8 +1358,10 @@ function renderOverview() {
   const timeline = tl.length ? `<div class="tl">${tl.map(ch => `<div class="d">${esc(ch.archivedDate || '')}</div><div class="e"><a href="${link('changes', ch.key)}">${esc(ch.name)}</a>${ch.tasks ? `<span class="small muted num">${ch.tasks.total} tasks</span>` : ''}${ch.deltas.map(d => `<span class="tag">${esc(d.capability)} ${deltaBadges(d)}</span>`).join('')}</div>`).join('')}</div>` : '<div class="empty">Nothing archived yet.</div>';
   return `
     ${pageHead('Overview', [esc(state.source.label), `<span class="num">${m.fileCount} files</span>`, state.loadedAt && `read ${ago(state.loadedAt)}`, state.source.truncated && '<span class="notice" style="margin:0;padding:2px 8px">GitHub truncated the file listing; some files may be missing.</span>'], cells)}
-    <h2>Active changes <span class="hn">grouped by state</span></h2>
-    ${m.active.length ? ledger : '<div class="empty">No active changes. Everything is archived, or nothing has been proposed yet.</div>'}
+    <h2>Flow <span class="hn">where each active change stands</span></h2>
+    <div class="dia dia-lifecycle" data-live>${svgLifecycle(layoutLifecycle(m), { active: sf })}</div>
+    <h2>${sf === 'archived' ? 'Archived changes' : 'Active changes'} <span class="hn">${sf ? `showing ${esc(STATUS[sf])} only<button class="small" id="stageclear">show all</button>` : 'grouped by state'}</span></h2>
+    ${sf ? (pool.some(c => c.status === sf) ? ledger : `<div class="empty">No change is at the ${esc(STATUS[sf])} stage.</div>`) : m.active.length ? ledger : '<div class="empty">No active changes. Everything is archived, or nothing has been proposed yet.</div>'}
     <div class="two">
       ${nextUp ? `<div><h2>Next open tasks <span class="hn">first three per change in progress</span></h2>${nextUp}</div>` : ''}
       <div><h2>Needs attention <span class="hn">${m.issues.length ? `${nWarn} warnings, ${nInfo} notes` : 'nothing flagged'}</span></h2>${issues}</div>
@@ -1396,7 +1513,7 @@ function renderProject() {
   parseHash();
   render();
   // programmatic loading hook (used for testing and for embedding): OSV.loadFiles([{path, text, mtime}], 'label')
-  window.OSV = { loadFiles: (files, label = 'in-memory') => applyLoad({ source: { type: 'files', label }, files }), state, parseSpec, parseDelta, parseTasks, buildModel, md };
+  window.OSV = { loadFiles: (files, label = 'in-memory') => applyLoad({ source: { type: 'files', label }, files }), state, parseSpec, parseDelta, parseTasks, buildModel, md, layoutLifecycle };
   // whole-page drop target
   document.body.addEventListener('dragover', e => { if (e.dataTransfer.types.includes('Files')) e.preventDefault(); });
   document.body.addEventListener('drop', async e => {

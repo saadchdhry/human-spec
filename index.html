@@ -1186,14 +1186,18 @@ async function loadFromGithub(spec, token, prev) {
   if (prev && prev.treeSha === tree.sha) return null; // unchanged
   const paths = tree.tree.filter(e => e.type === 'blob').map(e => e.path);
   let root;
-  if (repo.sub) root = repo.sub.replace(/\/?$/, '/'); else root = pickRoot(paths);
+  if (repo.sub) {
+    root = repo.sub.replace(/\/?$/, '/');
+    const under = paths.filter(p => p.startsWith(root)).map(p => p.slice(root.length));
+    if (!under.length) throw new Error(`Path not found: ${repo.sub} does not exist in ${repo.owner}/${repo.repo}@${ref}${tree.truncated ? ' (tree listing was truncated by GitHub)' : ''}.`);
+    if (!under.some(p => /^(specs|changes)\//.test(p))) {
+      // user pointed at a subfolder: maybe it contains openspec/
+      const inner = pickRoot(under);
+      if (inner === null) throw new Error(`No openspec folder under ${root}`);
+      root = root + inner;
+    }
+  } else root = pickRoot(paths);
   if (root === null) throw new Error(`No openspec/ folder found in ${repo.owner}/${repo.repo}@${ref}${tree.truncated ? ' (tree listing was truncated by GitHub; try pointing at the openspec folder with /tree/branch/path)' : ''}.`);
-  if (root && !paths.some(p => p.startsWith(root))) {
-    // user pointed at a subfolder: maybe it contains openspec/
-    const inner = pickRoot(paths.filter(p => p.startsWith(root)).map(p => p.slice(root.length)));
-    if (inner === null) throw new Error(`No openspec folder under ${root}`);
-    root = root + inner;
-  }
   const wanted = paths.filter(p => p.startsWith(root) && (TEXT_EXT.test(p) || p.endsWith('.openspec.yaml')) && !p.slice(root.length).split('/').some(seg => SKIP_DIRS.has(seg) || (seg.startsWith('.') && seg !== '.openspec.yaml')));
   const headers = token ? { Authorization: 'Bearer ' + token, Accept: 'application/vnd.github.raw+json' } : {};
   const urlFor = p => token ? `https://api.github.com/repos/${repo.owner}/${repo.repo}/contents/${p.split('/').map(encodeURIComponent).join('/')}?ref=${encodeURIComponent(ref)}` : `https://raw.githubusercontent.com/${repo.owner}/${repo.repo}/${encodeURIComponent(ref)}/${p.split('/').map(encodeURIComponent).join('/')}`;

@@ -1679,7 +1679,7 @@ function renderSpecs() {
   const pendingAdds = sp.pendingAdds.filter(p => !f || p.r.name.toLowerCase().includes(f)).map(p => requirementHtml(p.r, `spec:${sp.id}:+${p.ch.key}:${p.r.name}`, { badges: `<a class="badge add" href="${link('changes', p.ch.key, 'deltas')}">added in ${esc(p.ch.name)}</a>`, cls: 'pending' })).join('');
   const nScen = sp.requirements.reduce((n, r) => n + r.scenarios.length, 0);
   const pend = sp.pendingAdds.length + sp.pendingMods.length + sp.pendingRemoves.length + sp.pendingRenames.length;
-  const cells = [[sp.requirements.length, 'requirements'], [nScen, 'scenarios'], [pend, 'pending edits', sp.changes.length ? `in ${plural(sp.changes.length, 'change')}` : ''], [sp.history.length, 'archived changes', sp.history[0]?.archivedDate ? `last on ${sp.history[0].archivedDate}` : '']];
+  const cells = [[sp.requirements.length, 'requirements'], [nScen, 'scenarios'], [pend, 'pending requirement changes'], [sp.history.length + sp.changes.length, 'changes involved', sp.history.length + sp.changes.length ? `${sp.history.length} merged, ${sp.changes.length} pending` : '']];
   const pendRow = sp.changes.length ? `<div class="row" style="margin:0 0 6px"><span class="small muted">Pending changes</span>${sp.changes.map(c => `<a class="tag" href="${link('changes', c.key, 'deltas')}">${esc(c.name)} ${deltaBadges(c.deltas.find(d => d.capability === sp.id))}</a>`).join('')}</div>` : '';
   const hist = sp.history.length ? `<p class="small muted" style="margin:6px 0 0">Shaped by ${sp.history.map(c => `<a href="${link('changes', c.key)}">${esc(c.name)}</a>`).join(', ')}.</p>` : '';
   return `<div class="split">${side}<section>

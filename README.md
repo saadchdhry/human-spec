@@ -97,4 +97,4 @@ MIT. See [LICENSE](LICENSE). Use it, change it, ship it, commercially or not; ke
 
 The name "human-spec" and the human-spec.dev domain are not covered by the license. Forks are welcome, but should not present themselves as the official site or project.
 
-Fonts are loaded from Google Fonts: [Archivo](https://fonts.google.com/specimen/Archivo) and [Source Serif 4](https://fonts.google.com/specimen/Source+Serif+4), both under the SIL Open Font License 1.1.
+Fonts are loaded from Google Fonts: [Archivo](https://fonts.google.com/specimen/Archivo) and [Source Sans 3](https://fonts.google.com/specimen/Source+Sans+3), both under the SIL Open Font License 1.1.

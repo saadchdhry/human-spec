@@ -13,7 +13,7 @@
 <meta name="description" content="human-spec, an OpenSpec viewer: a standalone dashboard that reads any repository's openspec/ folder (local folder or GitHub) and visualizes capabilities, requirements, changes, spec deltas and task progress.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,75..100,400..700;1,100,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..600;1,8..60,400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,75..100,400..700;1,100,400&family=Source+Sans+3:ital,wght@0,400..600;1,400&display=swap">
 <link rel="stylesheet" href="icons/icons.css">
 <style>
 :root{
@@ -34,7 +34,7 @@
   --op-removed:var(--crit); --op-removed-ink:var(--crit-ink); --op-removed-soft:var(--crit-soft);
   --op-renamed:var(--violet); --op-renamed-ink:var(--violet-ink); --op-renamed-soft:var(--violet-soft);
   --sans:"Archivo","Helvetica Neue",Arial,sans-serif;
-  --serif:"Source Serif 4","Iowan Old Style","Palatino Linotype",Georgia,serif;
+  --prose:"Source Sans 3","Source Sans Pro","Helvetica Neue",Arial,sans-serif;
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   --r:3px;
 }
@@ -237,7 +237,7 @@ a.tag:hover{border-color:var(--ink-2);color:var(--ink)}
 .capentry:hover .n{text-decoration:underline;text-decoration-color:var(--rule)}
 .capentry .t{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
 .capentry .n{font-weight:600;font-size:14.5px}
-.capentry .p{font-family:var(--serif);font-size:14px;line-height:1.5;color:var(--ink-2);margin:3px 0 6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.capentry .p{font-family:var(--prose);font-size:14px;line-height:1.5;color:var(--ink-2);margin:3px 0 6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .capentry .m{font-size:12px;color:var(--muted);display:flex;gap:4px 12px;flex-wrap:wrap;align-items:center}
 .capentry.ghost .n{color:var(--ink-2)}
 
@@ -256,10 +256,10 @@ a.tag:hover{border-color:var(--ink-2);color:var(--ink)}
 .vocab .ops{display:flex;flex-wrap:wrap;gap:4px 14px;margin:6px 0 0;font-size:12.5px;color:var(--ink-2)}
 .vocab .ops .ico{font-size:16px;margin-right:5px}
 .vocab .w{display:block;font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:2px;font-weight:400;word-break:break-all}
-.vocab .p{font-family:var(--serif);font-size:14px;line-height:1.5;color:var(--ink-2);margin:3px 0 0;max-width:56ch}
+.vocab .p{font-family:var(--prose);font-size:14px;line-height:1.5;color:var(--ink-2);margin:3px 0 0;max-width:56ch}
 .vocab .c{font-size:12.5px;color:var(--ink-2);white-space:nowrap;text-decoration:none}
 .vocab .c:hover{text-decoration:underline;text-decoration-color:var(--rule)}
-.chain{font-family:var(--serif);font-size:15px;line-height:1.55;color:var(--ink-2);max-width:78ch;margin:0 0 4px}
+.chain{font-family:var(--prose);font-size:15px;line-height:1.55;color:var(--ink-2);max-width:78ch;margin:0 0 4px}
 
 /* history ledger */
 .tl{display:grid;grid-template-columns:104px 1fr}
@@ -293,7 +293,7 @@ a.tag:hover{border-color:var(--ink-2);color:var(--ink)}
 details.req[open]>summary::before,.req.open>.rh::before{transform:rotate(45deg)}
 .req>summary .rn,.req>.rh .rn{font-weight:600;flex:1 1 auto;min-width:0}
 .req>summary .rm,.req>.rh .rm{font-size:12px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
-.req>.rb{padding:2px 0 18px 30px;font-family:var(--serif);font-size:15px;line-height:1.55;max-width:78ch}
+.req>.rb{padding:2px 0 18px 30px;font-family:var(--prose);font-size:15px;line-height:1.55;max-width:78ch}
 .req>.rb .row,.req>.rb .notice,.req>.rb .badge{font-family:var(--sans);font-size:13px}
 .req>.rb .notice{font-size:13px}
 .req.pending{border-left:2px dashed var(--op-added)}
@@ -307,7 +307,7 @@ details.req[open]>summary::before,.req.open>.rh::before{transform:rotate(45deg)}
 .kw{display:inline-block;font-family:var(--sans);font-size:11px;font-weight:700;font-stretch:88%;letter-spacing:.03em;min-width:44px;flex:none;color:var(--muted);line-height:1.7}
 .kw.WHEN,.kw.GIVEN{color:var(--accent-ink)}
 .kw.THEN{color:var(--good-ink)}
-.md{font-family:var(--serif);font-size:15px;line-height:1.6;max-width:78ch}
+.md{font-family:var(--prose);font-size:15px;line-height:1.6;max-width:78ch}
 .md>:first-child{margin-top:0}.md>:last-child{margin-bottom:0}
 .md h1,.md h2,.md h3,.md h4{font-family:var(--sans);border:0;padding:0;display:block;letter-spacing:0;font-stretch:100%}
 .md h1{font-size:19px;margin:22px 0 8px}.md h2{font-size:16px;margin:22px 0 8px}.md h3{font-size:14.5px;margin:18px 0 6px}.md h4{font-size:13.5px;margin:14px 0 6px}
@@ -336,7 +336,7 @@ details.req[open]>summary::before,.req.open>.rh::before{transform:rotate(45deg)}
 .tsec li.d1{padding-left:32px}.tsec li.d2{padding-left:60px}
 
 /* diff */
-.diff{white-space:pre-wrap;font-family:var(--serif);font-size:15px;line-height:1.55;max-width:78ch}
+.diff{white-space:pre-wrap;font-family:var(--prose);font-size:15px;line-height:1.55;max-width:78ch}
 .diff del{background:var(--crit-soft);color:var(--crit-ink);text-decoration:line-through;text-decoration-color:rgba(142,35,35,.5)}
 .diff ins{background:var(--good-soft);color:var(--good-ink);text-decoration:none}
 .renames{margin:8px 0;border-top:1px solid var(--rule)}
@@ -353,14 +353,14 @@ details.req[open]>summary::before,.req.open>.rh::before{transform:rotate(45deg)}
 /* welcome + dialog */
 .welcome{max-width:920px;margin:28px auto 0}
 .welcome h1{font-size:36px;font-stretch:88%;letter-spacing:-.02em;margin:0 0 12px}
-.welcome .lede{font-family:var(--serif);font-size:17px;line-height:1.5;color:var(--ink-2);max-width:62ch;margin:0 0 26px}
+.welcome .lede{font-family:var(--prose);font-size:17px;line-height:1.5;color:var(--ink-2);max-width:62ch;margin:0 0 26px}
 .recon{border:1px solid var(--rule);border-radius:var(--r);padding:12px 16px;margin:0 0 20px}
 .opts{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--rule)}
 @media (max-width:700px){.opts{grid-template-columns:1fr}.opt+.opt{border-left:0!important;border-top:1px solid var(--rule);padding-left:0!important}.opt{padding-right:0!important}}
 .opt{padding:22px 28px 22px 0;min-width:0}
 .opt+.opt{border-left:1px solid var(--rule);padding:22px 0 22px 28px}
 .opt h3{margin:0 0 6px;font-size:17px}
-.opt p{margin:0 0 12px;color:var(--ink-2);font-family:var(--serif);font-size:14.5px;line-height:1.5}
+.opt p{margin:0 0 12px;color:var(--ink-2);font-family:var(--prose);font-size:14.5px;line-height:1.5}
 .drop{border:1.5px dashed var(--rule);border-radius:var(--r);padding:16px;text-align:center;color:var(--muted);margin-top:12px}
 .drop.over{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink)}
 dialog{border:1px solid var(--rule);border-radius:var(--r);background:var(--sheet);color:var(--ink);padding:0;max-width:760px;width:calc(100% - 32px)}

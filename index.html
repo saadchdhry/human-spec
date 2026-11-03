@@ -425,6 +425,15 @@ kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--rule);border-b
 .dia .mk.pend{fill:var(--sheet);stroke-dasharray:2 2}
 .dia .ld{font-size:11.5px;fill:var(--muted)}
 .dia .lr{font-size:11.5px;fill:var(--ink-2)}
+.dia .tk{stroke:var(--rule);stroke-width:1}
+label.tgl.lineage-switch{font-size:12.5px;line-height:1.4;padding:2px 0;border:1px solid transparent}
+.lineage-axis{position:sticky;top:60px;z-index:2;background:var(--sheet);border-bottom:1px solid var(--rule)}
+.lineage-axis>.dia-lineage{margin:0 0 0 30px}
+.lineage-axis+.reqs{border-top:0}
+.reqs.lineage-compact .req>.dia-lineage{margin:0 0 8px 30px}
+.lineage-legend svg{max-width:100%;height:auto}
+.lineage-legend text{fill:var(--ink-2)}
+.lineage-legend .lh{font-size:11.5px;font-weight:600;fill:var(--muted)}
 .welcome .dia-lifecycle{margin-bottom:28px}
 </style>
 </head>
@@ -474,6 +483,7 @@ const state = {
   auto: localStorage.getItem('osv.auto') !== '0',
   open: new Set(),   // open <details> keys
   openOnly: localStorage.getItem('osv.openOnly') === '1',
+  compactLineage: localStorage.getItem('osv.compactLineage') === '1',
   deltaView: {},     // key -> 'proposed'|'current'|'diff'
   stageFilter: null, // lifecycle stage the Overview ledger is narrowed to
   impactView: 'flow', // 'flow'|'matrix' on the Overview
@@ -1061,7 +1071,14 @@ function svgImpact(I) {
   return `<svg viewBox="0 0 ${I.width} ${r1(I.height)}" width="100%" aria-label="Which active change touches which capability" xmlns="http://www.w3.org/2000/svg">${heads}${I.bands.map(band).join('')}${[...I.left, ...I.right].map(node).join('')}</svg>`;
 }
 
-function layoutLineage(sp, r) {
+function layoutLineageColumns(sp) {
+  const merged = sp.history.filter(ch => ch.deltas.some(d => d.capability === sp.id)).sort((a, b) => (a.archivedDate || '').localeCompare(b.archivedDate || ''));
+  return [
+    ...merged.map(ch => ({ key: ch.key, name: ch.name, date: ch.archivedDate || '', pending: false })),
+    ...sp.changes.map(ch => ({ key: ch.key, name: ch.name, date: 'pending', pending: true }))
+  ];
+}
+function layoutLineage(sp, r, cols = layoutLineageColumns(sp), step = LINEAGE_FULL.step) {
   const past = [];
   let cur = r.name;
   for (let i = sp.history.length - 1; i >= 0; i--) {
@@ -1089,29 +1106,65 @@ function layoutLineage(sp, r) {
     ...sp.pendingMods.filter(p => normName(p.curName) === n).map(p => pend(p, 'mod')),
     ...sp.pendingRemoves.filter(p => normName(p.curName) === n).map(p => pend(p, 'rem'))
   ];
-  const step = 184, y = 36, fitW = step - 30;
-  const events = [...past, ...pending].map((e, i) => ({
-    ...e, x: step * i + step / 2, y,
-    changeText: fitText(e.change, fitW, 6.1),
-    renText: e.kind === 'ren' ? fitText(`${e.from} → ${e.to}`, fitW, 5.6) : ''
-  }));
-  const firstPending = events.findIndex(e => e.pending);
-  return { events, width: step * events.length, height: events.some(e => e.renText) ? 84 : 68, y, splitX: firstPending > 0 ? events[firstPending].x - step / 2 : firstPending === 0 ? 0 : null };
+  const colOf = new Map(cols.map((c, i) => [c.key, i]));
+  const events = [...past, ...pending].map(e => { const col = colOf.get(e.key); return { ...e, col, x: step * col + step / 2 }; });
+  const firstPending = cols.findIndex(c => c.pending);
+  return { events, width: step * cols.length, step, splitX: firstPending < 0 ? null : step * firstPending };
 }
+const lineageVerb = { add: 'added', mod: 'modified', ren: 'renamed', rem: 'removed' };
+const lineageTip = e => `${lineageVerb[e.kind]}${e.kind === 'ren' ? ` from “${e.from}” to “${e.to}”` : ''} in ${e.change}${e.pending ? ' (pending)' : ` on ${e.date}`}`;
+function lineageMark(e, y) {
+  const { x } = e, c = `mk k-${e.kind}${e.pending ? ' pend' : ''}`;
+  if (e.kind === 'add') return `<circle class="${c}" cx="${x}" cy="${y}" r="5.5"/>`;
+  if (e.kind === 'mod') return `<circle class="${c}" cx="${x}" cy="${y}" r="5"/>`;
+  if (e.kind === 'ren') return `<path class="${c}" d="M${x} ${y - 7}l7 7l-7 7l-7 -7z"/>`;
+  return `<path class="${c}" d="M${x - 5} ${y - 5}l10 10M${x + 5} ${y - 5}l-10 10"/>`;
+}
+function lineageBaseline(width, y, sx) {
+  const x0 = 8, x1 = width - 8;
+  return sx === null ? `<line class="bl" x1="${x0}" y1="${y}" x2="${x1}" y2="${y}"/>`
+    : `${sx > 0 ? `<line class="bl" x1="${x0}" y1="${y}" x2="${sx}" y2="${y}"/>` : ''}<line class="bl pend" x1="${Math.max(x0, sx)}" y1="${y}" x2="${x1}" y2="${y}"/>`;
+}
+
+// full lineage: every row labels its own events
+const LINEAGE_FULL = { step: 184, y: 36, height: 68, heightRen: 84 };
 function svgLineage(G) {
-  const mark = e => {
-    const { x, y } = e, c = `mk k-${e.kind}${e.pending ? ' pend' : ''}`;
-    if (e.kind === 'add') return `<circle class="${c}" cx="${x}" cy="${y}" r="5.5"/>`;
-    if (e.kind === 'mod') return `<circle class="${c}" cx="${x}" cy="${y}" r="5"/>`;
-    if (e.kind === 'ren') return `<path class="${c}" d="M${x} ${y - 7}l7 7l-7 7l-7 -7z"/>`;
-    return `<path class="${c}" d="M${x - 5} ${y - 5}l10 10M${x + 5} ${y - 5}l-10 10"/>`;
+  const { y } = LINEAGE_FULL, fitW = G.step - 30;
+  const ev = e => {
+    const renText = e.kind === 'ren' ? fitText(`${e.from} → ${e.to}`, fitW, 5.6) : '';
+    return `<g class="ev"><title>${esc(lineageTip(e))}</title>${svgT(e.x, 18, e.date || 'undated', 'ld num')}<circle class="mkbg" cx="${e.x}" cy="${y}" r="9"/>${lineageMark(e, y)}<a href="${esc(link('changes', e.key, 'deltas'))}">${svgT(e.x, 60, fitText(e.change, fitW, 6.1), 'lk')}</a>${renText ? svgT(e.x, 76, renText, 'lr') : ''}</g>`;
   };
-  const verb = { add: 'added', mod: 'modified', ren: 'renamed', rem: 'removed' };
-  const ev = e => `<g class="ev"><title>${esc(`${verb[e.kind]}${e.kind === 'ren' ? ` from “${e.from}” to “${e.to}”` : ''} in ${e.change}${e.pending ? ' (pending)' : ` on ${e.date}`}`)}</title>${svgT(e.x, 18, e.date || 'undated', 'ld num')}<circle class="mkbg" cx="${e.x}" cy="${e.y}" r="9"/>${mark(e)}<a href="${esc(link('changes', e.key, 'deltas'))}">${svgT(e.x, 60, e.changeText, 'lk')}</a>${e.renText ? svgT(e.x, 76, e.renText, 'lr') : ''}</g>`;
-  const x0 = 8, x1 = G.width - 8, sx = G.splitX;
-  const base = sx === null ? `<line class="bl" x1="${x0}" y1="${G.y}" x2="${x1}" y2="${G.y}"/>`
-    : `${sx > 0 ? `<line class="bl" x1="${x0}" y1="${G.y}" x2="${sx}" y2="${G.y}"/>` : ''}<line class="bl pend" x1="${Math.max(x0, sx)}" y1="${G.y}" x2="${x1}" y2="${G.y}"/>`;
-  return `<svg viewBox="0 0 ${G.width} ${G.height}" width="${G.width}" height="${G.height}" aria-label="Lineage of this requirement" xmlns="http://www.w3.org/2000/svg">${base}${G.events.map(ev).join('')}</svg>`;
+  const h = G.events.some(e => e.kind === 'ren') ? LINEAGE_FULL.heightRen : LINEAGE_FULL.height;
+  return `<svg viewBox="0 0 ${G.width} ${h}" width="${G.width}" height="${h}" aria-label="Lineage of this requirement" xmlns="http://www.w3.org/2000/svg">${lineageBaseline(G.width, y, G.splitX)}${G.events.map(ev).join('')}</svg>`;
+}
+
+// compact lineage: marks only per row, change names and dates once in a sticky axis row
+// the gutter leaves room for the last rotated axis label, which overhangs past the last column
+const LINEAGE_MARKS = { step: 56, gutter: 118, y: 13, height: 26, axisHeight: 150, nameW: 150, lift: 13 };
+function svgLineageMarks(G) {
+  const { y, height } = LINEAGE_MARKS, w = G.width + LINEAGE_MARKS.gutter;
+  const ev = e => `<g class="ev"><title>${esc(lineageTip(e))}</title><circle class="mkbg" cx="${e.x}" cy="${y}" r="9"/>${lineageMark(e, y)}</g>`;
+  return `<svg viewBox="0 0 ${w} ${height}" width="${w}" height="${height}" aria-label="Lineage of this requirement" xmlns="http://www.w3.org/2000/svg">${lineageBaseline(G.width, y, G.splitX)}${G.events.map(ev).join('')}</svg>`;
+}
+function svgLineageAxis(cols, step) {
+  const { axisHeight: h, gutter, nameW, lift } = LINEAGE_MARKS, yb = h - 10, width = step * cols.length, w = width + gutter;
+  const fp = cols.findIndex(c => c.pending);
+  const label = (c, i) => {
+    const x = step * i + step / 2;
+    return `<line class="tk" x1="${x}" y1="${yb + 2}" x2="${x}" y2="${h}"/><g class="axl" transform="translate(${r1(x)} ${yb}) rotate(-45)"><title>${esc(`${c.name}${c.pending ? ' (pending)' : c.date ? ` · archived ${c.date}` : ''}`)}</title>${svgT(4, 0, c.date || 'undated', 'ld num', 'start')}<a href="${esc(link('changes', c.key, 'deltas'))}">${svgT(4, -lift, fitText(c.name, nameW, 6.1), 'lk', 'start')}</a></g>`;
+  };
+  return `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" aria-label="Changes that touched this capability" xmlns="http://www.w3.org/2000/svg">${lineageBaseline(width, h - 1, fp < 0 ? null : step * fp)}${cols.map(label).join('')}</svg>`;
+}
+function renderLineageLegend() {
+  const kinds = ['add', 'mod', 'ren', 'rem'], x0 = 110, dx = 130;
+  let s = svgT(0, 21, 'Merged', 'lh', 'start') + svgT(0, 51, 'Pending', 'lh', 'start') + svgT(0, 81, 'Baseline', 'lh', 'start');
+  kinds.forEach((k, i) => {
+    const x = x0 + dx * i;
+    s += lineageMark({ kind: k, x }, 17) + svgT(x + 14, 21, lineageVerb[k], '', 'start');
+    s += lineageMark({ kind: k, x, pending: true }, 47) + svgT(x + 14, 51, lineageVerb[k], '', 'start');
+  });
+  s += `<line class="bl" x1="${x0 - 8}" y1="77" x2="${x0 + 100}" y2="77"/>${svgT(x0 + 108, 81, 'merged', '', 'start')}<line class="bl pend" x1="${x0 + dx * 2 - 8}" y1="77" x2="${x0 + dx * 2 + 100}" y2="77"/>${svgT(x0 + dx * 2 + 108, 81, 'pending', '', 'start')}`;
+  return `<h2>Legend <span class="hn">marks on the lineage timelines</span></h2><div class="dia lineage-legend"><svg viewBox="0 0 640 92" width="640" height="92" aria-label="Legend of the lineage marks" xmlns="http://www.w3.org/2000/svg">${s}</svg></div>`;
 }
 
 // ---------- sources: local folder ----------
@@ -1465,7 +1518,21 @@ function wireCommon() {
   $('#specsearch') && ($('#specsearch').oninput = e => { state.specFilter = e.target.value; renderSideSpecs(); });
   $('#reqsearch') && ($('#reqsearch').oninput = e => { state.reqFilter = e.target.value; render({ keepScroll: true }); setTimeout(() => { const i = $('#reqsearch'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }); });
   for (const b of document.querySelectorAll('[data-expand]')) b.onclick = () => { const open = b.dataset.expand === '1'; for (const d of b.closest('section, main').querySelectorAll('details[data-key], .req[data-key]')) setOpen(d, open); };
+  $('#compactlineage') && ($('#compactlineage').onchange = e => { state.compactLineage = e.target.checked; localStorage.setItem('osv.compactLineage', state.compactLineage ? '1' : '0'); render({ keepScroll: true }); });
   for (const el of document.querySelectorAll('.dia-lineage')) el.scrollLeft = el.scrollWidth;
+  const strips = new Map();
+  for (const el of document.querySelectorAll('.dia-lineage')) { const sec = el.closest('section'); strips.set(sec, [...(strips.get(sec) || []), el]); }
+  for (const group of strips.values()) {
+    // the driver guard stops the strips that were scrolled programmatically from echoing back
+    let driver = null, t = 0;
+    for (const el of group) el.addEventListener('scroll', () => {
+      if (driver && driver !== el) return;
+      driver = el;
+      for (const o of group) if (o !== el && o.scrollLeft !== el.scrollLeft) o.scrollLeft = el.scrollLeft;
+      clearTimeout(t);
+      t = setTimeout(() => { driver = null; }, 120);
+    }, { passive: true });
+  }
   for (const b of document.querySelectorAll('[data-dv]')) b.onclick = () => { state.deltaView[b.dataset.key] = b.dataset.dv; render({ keepScroll: true }); };
   const lc = $('.dia-lifecycle[data-live]');
   if (lc) lc.onclick = lc.onkeydown = e => {
@@ -1693,11 +1760,15 @@ function renderSpecs() {
   const remsFor = r => sp.pendingRemoves.filter(p => norm(p.curName) === norm(r.name));
   const rensFor = r => sp.pendingRenames.filter(p => norm(p.r.from) === norm(r.name));
   const reqs = sp.requirements.filter(r => !f || r.name.toLowerCase().includes(f) || r.text.toLowerCase().includes(f) || r.scenarios.some(s => s.name.toLowerCase().includes(f)));
+  const compact = state.compactLineage;
+  const cols = layoutLineageColumns(sp), step = compact ? LINEAGE_MARKS.step : LINEAGE_FULL.step;
+  let anyLineage = false;
   const reqHtml = reqs.map(r => {
     const mods = modsFor(r), rems = remsFor(r), rens = rensFor(r);
     const badges = [...mods.map(p => `<a class="badge mod" href="${link('changes', p.ch.key, 'deltas')}" title="Modified by ${esc(p.ch.name)}">modified in ${esc(p.ch.name)}</a>`), ...rems.map(p => `<a class="badge rem" href="${link('changes', p.ch.key, 'deltas')}">removed in ${esc(p.ch.name)}</a>`), ...rens.map(p => `<a class="badge ren" href="${link('changes', p.ch.key, 'deltas')}" title="New name: ${esc(p.r.to)}">renamed in ${esc(p.ch.name)}</a>`)].join(' ');
-    const lin = layoutLineage(sp, r);
-    const timeline = lin.events.length ? `<div class="dia dia-lineage">${svgLineage(lin)}</div>` : '';
+    const lin = layoutLineage(sp, r, cols, step);
+    anyLineage = anyLineage || lin.events.length > 0;
+    const timeline = lin.events.length ? `<div class="dia dia-lineage">${compact ? svgLineageMarks(lin) : svgLineage(lin)}</div>` : '';
     return requirementHtml(r, `spec:${sp.id}:${r.name}`, { badges, cls: rems.length ? 'removed' : '', timeline });
   }).join('');
   const pendingAdds = sp.pendingAdds.filter(p => !f || p.r.name.toLowerCase().includes(f)).map(p => requirementHtml(p.r, `spec:${sp.id}:+${p.ch.key}:${p.r.name}`, { badges: `<a class="badge add" href="${link('changes', p.ch.key, 'deltas')}">added in ${esc(p.ch.name)}</a>`, cls: 'pending' })).join('');
@@ -1711,10 +1782,12 @@ function renderSpecs() {
     ${sp.purpose ? `<div class="md">${md(sp.purpose)}</div>` : ''}
     ${pendRow || hist ? `<div style="margin-top:14px">${pendRow}${hist}</div>` : ''}
     ${sp.other.length ? `<div class="reqs" style="margin-top:16px">${sp.other.map(o => `<details class="req" data-key="spec:${esc(sp.id)}:§${esc(o.title)}" ${state.open.has(`spec:${sp.id}:§${o.title}`) ? 'open' : ''}><summary><span class="rn">${esc(o.title)}</span><span class="rm">section</span></summary><div class="rb md">${md(o.body)}</div></details>`).join('')}</div>` : ''}
-    <div class="h2row"><h2>Requirements <span class="c num">${sp.requirements.length}</span></h2><div class="row"><input type="search" id="reqsearch" placeholder="Search requirements" aria-label="Search requirements" value="${esc(state.reqFilter || '')}" style="width:220px"><button class="small" data-expand="1">Expand all</button><button class="small" data-expand="0">Collapse all</button></div></div>
-    ${reqHtml ? `<div class="reqs">${reqHtml}</div>` : '<div class="empty">No requirement matches.</div>'}
+    <div class="h2row"><h2>Requirements <span class="c num">${sp.requirements.length}</span></h2><div class="row"><input type="search" id="reqsearch" placeholder="Search requirements" aria-label="Search requirements" value="${esc(state.reqFilter || '')}" style="width:220px"><label class="tgl small lineage-switch" title="Draw the timelines as marks only, with change names and dates once in an axis row"><input type="checkbox" id="compactlineage" ${compact ? 'checked' : ''}> Compact view</label><button class="small" data-expand="1">Expand all</button><button class="small" data-expand="0">Collapse all</button></div></div>
+    ${compact && anyLineage ? `<div class="lineage-axis"><div class="dia dia-lineage">${svgLineageAxis(cols, step)}</div></div>` : ''}
+    ${reqHtml ? `<div class="reqs${compact ? ' lineage-compact' : ''}">${reqHtml}</div>` : '<div class="empty">No requirement matches.</div>'}
     ${pendingAdds ? `<h2>Proposed additions <span class="c num">${sp.pendingAdds.length}</span><span class="hn">from active changes, not yet in the spec</span></h2><div class="reqs">${pendingAdds}</div>` : ''}
     ${sp.design ? `<h2>Design</h2><div class="md">${md(sp.design)}</div>` : ''}
+    ${anyLineage ? renderLineageLegend() : ''}
   </section></div>`;
 }
 

@@ -361,6 +361,8 @@ details.req[open]>summary::before,.req.open>.rh::before{transform:rotate(45deg)}
 .opt+.opt{border-left:1px solid var(--rule);padding:22px 0 22px 28px}
 .opt h3{margin:0 0 6px;font-size:17px}
 .opt p{margin:0 0 12px;color:var(--ink-2);font-family:var(--prose);font-size:14.5px;line-height:1.5}
+.opt.sample{grid-column:1/-1;border-left:0;border-top:1px solid var(--rule);padding:18px 0;display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center;justify-content:space-between}
+.opt.sample p{margin:0;max-width:62ch}
 .drop{border:1.5px dashed var(--rule);border-radius:var(--r);padding:16px;text-align:center;color:var(--muted);margin-top:12px}
 .drop.over{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink)}
 dialog{border:1px solid var(--rule);border-radius:var(--r);background:var(--sheet);color:var(--ink);padding:0;max-width:760px;width:calc(100% - 32px)}
@@ -488,7 +490,7 @@ const fmtDate = ts => ts ? new Date(ts).toISOString().slice(0, 10) : '';
 
 // ---------- state ----------
 const state = {
-  source: null,      // {type:'local'|'github'|'files', label, handle?, repo?, ref?, token?, treeSha?}
+  source: null,      // {type:'local'|'github'|'files'|'sample', label, handle?, repo?, ref?, token?, treeSha?}
   files: null,       // [{path, text, mtime}] relative to the openspec folder
   model: null,
   status: 'idle',    // idle | busy | live | error
@@ -1369,6 +1371,23 @@ async function loadFromGithub(spec, token, prev) {
   localStorage.setItem('osv.last', JSON.stringify({ type: 'github', spec: recents[0].spec }));
   return { source: { type: 'github', label, repo: { ...repo, ref }, token, treeSha: tree.sha, truncated: tree.truncated, url: `https://github.com/${repo.owner}/${repo.repo}/tree/${ref}/${root}` }, files };
 }
+// a script tag rather than fetch, because fetch of a local file fails over file://
+let samplePromise = null;
+function loadSampleScript() {
+  if (window.OSV_SAMPLE) return Promise.resolve(window.OSV_SAMPLE);
+  return samplePromise ||= new Promise((res, rej) => {
+    const el = document.createElement('script');
+    el.src = 'sample/sample.js';
+    el.onload = () => window.OSV_SAMPLE ? res(window.OSV_SAMPLE) : rej(new Error('sample/sample.js loaded but defined no sample.'));
+    el.onerror = () => { samplePromise = null; el.remove(); rej(new Error('Could not load sample/sample.js, which ships next to index.html.')); };
+    document.head.appendChild(el);
+  });
+}
+async function loadSample() {
+  const smp = await loadSampleScript();
+  localStorage.setItem('osv.last', JSON.stringify({ type: 'sample' }));
+  return { source: { type: 'sample', label: smp.label, url: `https://github.com/${smp.source.repo}/tree/${smp.source.commit}/openspec` }, files: smp.files };
+}
 
 // ---------- loading orchestration ----------
 let autoTimer = null;
@@ -1426,6 +1445,7 @@ async function pickFolder() {
 async function tryRestore() {
   const last = JSON.parse(localStorage.getItem('osv.last') || 'null');
   if (!last) return false;
+  if (last.type === 'sample') { await runLoad(loadSample); return true; }
   if (last.type === 'github') {
     const token = sessionStorage.getItem('osv.ghtoken') || localStorage.getItem('osv.ghtoken') || '';
     await runLoad(() => loadFromGithub(last.spec, token));
@@ -1478,12 +1498,12 @@ let srcMenuOpen = false;
 function renderSrcBar() {
   const s = state.source;
   const dot = `<span class="dot ${state.status === 'live' ? 'live' : state.status === 'busy' ? 'busy' : state.status === 'error' ? 'err' : ''}" title="${esc(state.statusMsg || state.status)}"></span>`;
-  const menu = srcMenuOpen ? `<div class="menu" role="menu"><button role="menuitem" id="srcbtn">${s ? 'Change source…' : 'Open source…'}</button>${s && s.type === 'github' ? `<a role="menuitem" href="${esc(s.url)}" target="_blank" rel="noopener">Open on GitHub</a>` : ''}</div>` : '';
+  const menu = srcMenuOpen ? `<div class="menu" role="menu"><button role="menuitem" id="srcbtn">${s ? 'Change source…' : 'Open source…'}</button>${s && s.url ? `<a role="menuitem" href="${esc(s.url)}" target="_blank" rel="noopener">Open on GitHub</a>` : ''}</div>` : '';
   const chip = `<div class="srcmenu"><button class="chip" id="srcchip" aria-haspopup="menu" aria-expanded="${srcMenuOpen}" title="${s ? esc(s.label) : 'No source loaded'}">${dot}${s ? `<b>${esc(s.label)}</b>` : 'No source'}<span class="caret"></span></button>${menu}</div>`;
   const when = state.loadedAt ? `<span class="muted" title="${new Date(state.loadedAt).toLocaleString()}">${state.status === 'busy' ? esc(state.statusMsg || 'loading…') : 'read ' + ago(state.loadedAt)}</span>` : '';
-  const auto = s && s.type !== 'files' ? `<label class="tgl sw" title="${s.type === 'local' ? 'Re-read the folder every 3 s and redraw when a file changes' : 'Re-check GitHub every 90 s'}"><input type="checkbox" id="autochk" ${state.auto ? 'checked' : ''}> Live</label>` : '';
+  const auto = s && s.type !== 'files' && s.type !== 'sample' ? `<label class="tgl sw" title="${s.type === 'local' ? 'Re-read the folder every 3 s and redraw when a file changes' : 'Re-check GitHub every 90 s'}"><input type="checkbox" id="autochk" ${state.auto ? 'checked' : ''}> Live</label>` : '';
   const nextTheme = THEMES[(THEMES.indexOf(themeSetting()) + 1) % 3];
-  const icons = `<span class="igrp"><a class="ibtn" href="${REPO_URL}" target="_blank" rel="noopener" title="human-spec on GitHub" aria-label="human-spec on GitHub">${ICONS.github}</a>${s ? `<button class="ibtn" id="refreshbtn" title="Read the source again now" aria-label="Reread now">${ICONS.refresh}</button>` : ''}<button class="ibtn" id="themebtn" title="Theme: ${{ light: 'light', dark: 'dark', system: 'follows the system' }[themeSetting()]}. Click for ${nextTheme}." aria-label="Theme: ${themeSetting()}">${ICONS[themeSetting()]}</button></span>`;
+  const icons = `<span class="igrp"><a class="ibtn" href="${REPO_URL}" target="_blank" rel="noopener" title="human-spec on GitHub" aria-label="human-spec on GitHub">${ICONS.github}</a>${s && s.type !== 'sample' ? `<button class="ibtn" id="refreshbtn" title="Read the source again now" aria-label="Reread now">${ICONS.refresh}</button>` : ''}<button class="ibtn" id="themebtn" title="Theme: ${{ light: 'light', dark: 'dark', system: 'follows the system' }[themeSetting()]}. Click for ${nextTheme}." aria-label="Theme: ${themeSetting()}">${ICONS[themeSetting()]}</button></span>`;
   $('#srcbar').innerHTML = `${chip}${when}${auto}${icons}`;
   $('#srcchip').onclick = e => { e.stopPropagation(); srcMenuOpen = !srcMenuOpen; renderSrcBar(); if (srcMenuOpen) $('#srcbtn')?.focus(); };
   $('#srcbtn') && ($('#srcbtn').onclick = () => { srcMenuOpen = false; renderSrcBar(); openSourceDialog(); });
@@ -1595,6 +1615,10 @@ function sourceOptionsHtml() {
       <div class="row spread"><label class="tgl small"><input type="checkbox" id="ghremember" ${localStorage.getItem('osv.ghtoken') ? 'checked' : ''}> Remember the token on this device</label><button class="primary" id="ghbtn">Load repository</button></div>
       ${recentsGh.length ? `<div class="recent"><span class="small muted">Recent</span>${recentsGh.map(r => `<button class="small" data-gh="${esc(r.spec)}">${esc(r.spec)}</button>`).join('')}</div>` : ''}
     </div>
+    <div class="opt sample">
+      <div><h3>Sample</h3><p>The OpenSpec project's own specs and changes, bundled with this page, so no network is needed.</p></div>
+      <button id="samplebtn">Open the sample</button>
+    </div>
   </div>`;
 }
 function renderWelcome() {
@@ -1635,6 +1659,7 @@ function wireSourceControls(root, { inDialog } = {}) {
   if (ghbtn) ghbtn.onclick = () => doGh($('#ghspec', root).value);
   const ghspec = $('#ghspec', root); if (ghspec) ghspec.onkeydown = e => { if (e.key === 'Enter') doGh(ghspec.value); };
   for (const b of root.querySelectorAll('[data-gh]')) b.onclick = () => doGh(b.dataset.gh);
+  const sb = $('#samplebtn', root); if (sb) sb.onclick = () => { closeDialog(); runLoad(loadSample); };
   const rb = $('#reconnectbtn', root); if (rb) rb.onclick = () => { const rec = state.pendingReconnect; state.pendingReconnect = null; closeDialog(); runLoad(() => reconnect(rec)); };
   idb.all().then(recs => {
     const el = $('#recentlocal', root); if (!el || !recs.length) return;

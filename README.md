@@ -43,7 +43,9 @@ OpenSpec work moves through the same stages in every repository: a change is pro
 
 ## Open it
 
-**Straight from disk.** Open `index.html` in Chrome or Edge. The folder picker, live refresh and the icons all work from a `file://` address, as long as the `icons/` folder sits next to the page.
+**Straight from disk.** Open `index.html` in Chrome or Edge. The folder picker, live refresh, the icons and the sample all work from a `file://` address, as long as the `icons/` and `sample/` folders sit next to the page.
+
+**Try it first.** The welcome page offers a Sample: the OpenSpec project's own `openspec/` folder, bundled in `sample/` under its MIT licence, so nothing has to be cloned or fetched. `sample/README.md` names the commit it was taken from and `sample/build.py` regenerates the bundle.
 
 **Icons.** The vocabulary and operation icons are the `.svg` files in `icons/`. The page loads them through `icons/icons.css`, where each one is inlined, because a page opened from disk cannot load mask images by path. After editing or adding an icon, run:
 

@@ -1630,7 +1630,8 @@ function renderChanges() {
   const side = `<aside class="side"><h4><span>Active</span><span class="num">${m.active.length}</span></h4>${m.active.map(item).join('') || '<div class="empty small">None.</div>'}<h4><span>Archived</span><span class="num">${m.archived.length}</span></h4>${m.archived.map(item).join('') || '<div class="empty small">None.</div>'}</aside>`;
   if (!ch) return `<div class="split">${side}<div class="empty">No changes under changes/.</div></div>`;
   const tab = state.route.tab || 'proposal';
-  const tabs = [['proposal', 'Proposal'], ['tasks', `Tasks${ch.tasks ? `<span class="c">${ch.tasks.done}/${ch.tasks.total}</span>` : ''}`], ['deltas', `Spec deltas<span class="c">${ch.deltas.reduce((n, d) => n + d.count, 0)}</span>`], ch.design && ['design', 'Design'], ['files', `Files<span class="c">${ch.files.length}</span>`]].filter(Boolean);
+  // tabs follow the order the OpenSpec workflow writes the files: why, how, what, then the work
+  const tabs = [['proposal', 'Proposal'], ch.design && ['design', 'Design'], ['deltas', `Spec deltas<span class="c">${ch.deltas.reduce((n, d) => n + d.count, 0)}</span>`], ['tasks', `Tasks${ch.tasks ? `<span class="c">${ch.tasks.done}/${ch.tasks.total}</span>` : ''}`], ['files', `Files<span class="c">${ch.files.length}</span>`]].filter(Boolean);
   let body = '';
   if (tab === 'proposal') body = ch.proposal.raw ? `<div class="md">${md(ch.proposal.raw)}</div>` : '<div class="empty">This change has no proposal.md.</div>';
   else if (tab === 'tasks') body = renderTasks(ch);

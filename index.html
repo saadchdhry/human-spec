@@ -129,6 +129,7 @@ main.sheet{max-width:1440px;margin:22px auto 48px;background:var(--sheet);border
 h1{font-size:26px;line-height:1.15;margin:0 0 6px;font-weight:600;font-stretch:92%;letter-spacing:-.015em;overflow-wrap:anywhere}
 h2{font-size:17px;line-height:1.3;margin:30px 0 12px;font-weight:600;letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;padding-bottom:6px;border-bottom:1px solid var(--rule)}
 h2 .hn{font-weight:400;font-size:12.5px;color:var(--muted);margin-left:auto}
+h2 .c{font-weight:400;font-size:13px;color:var(--muted);margin-left:-6px}
 h3{font-size:14.5px;margin:18px 0 8px;font-weight:600}
 .h2row{display:flex;justify-content:space-between;align-items:flex-end;gap:10px 16px;flex-wrap:wrap;border-bottom:1px solid var(--rule);margin:30px 0 12px}
 .h2row h2{border:0;margin:0}
@@ -412,7 +413,8 @@ kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--rule);border-b
 .dia .node,.dia .band{transition:opacity .12s}
 .dia svg.focus .band:not(.on),.dia svg.focus .node:not(.on){opacity:.12}
 @media (prefers-reduced-motion:reduce){.dia .node,.dia .band{transition:none}}
-.dia-lineage{overflow-x:auto;margin:2px 0 14px;max-width:100%;display:flex}
+.dia-lineage{overflow-x:auto;margin:2px 0 14px;max-width:100%;display:flex;scrollbar-width:none}
+.dia-lineage::-webkit-scrollbar{display:none}
 .dia-lineage svg{flex:none;margin-left:auto}
 .dia .bl{stroke:var(--rule);stroke-width:1.5}
 .dia .bl.pend{stroke-dasharray:4 3}
@@ -1641,18 +1643,18 @@ function renderOverview() {
   const tl = [...m.archived].sort((a, b) => (b.archivedDate || '').localeCompare(a.archivedDate || ''));
   const timeline = tl.length ? `<div class="tl">${tl.map(ch => `<div class="d">${esc(ch.archivedDate || '')}</div><div class="e"><a href="${link('changes', ch.key)}">${esc(ch.name)}</a>${ch.tasks ? `<span class="small muted num">${ch.tasks.total} tasks</span>` : ''}${ch.deltas.map(d => `<span class="tag">${esc(d.capability)} ${deltaBadges(d)}</span>`).join('')}</div>`).join('')}</div>` : '<div class="empty">Nothing archived yet.</div>';
   return `
-    ${pageHead('Overview', [esc(state.source.label), `<span class="num">${m.fileCount} files</span>`, state.loadedAt && `read ${ago(state.loadedAt)}`, state.source.truncated && '<span class="notice" style="margin:0;padding:2px 8px">GitHub truncated the file listing; some files may be missing.</span>'], cells)}
+    ${pageHead(esc(state.source.label), [`<span class="num">${m.fileCount} files</span>`, state.loadedAt && `read ${ago(state.loadedAt)}`, state.source.truncated && '<span class="notice" style="margin:0;padding:2px 8px">GitHub truncated the file listing; some files may be missing.</span>'], cells)}
     <h2>Flow <span class="hn">where each active change stands</span></h2>
     <div class="dia dia-lifecycle" data-live>${svgLifecycle(layoutLifecycle(m), { active: sf })}</div>
-    <h2>${sf === 'archived' ? 'Archived changes' : 'Active changes'} <span class="hn">${sf ? `showing ${esc(STATUS[sf])} only<button class="small" id="stageclear">show all</button>` : 'grouped by state'}</span></h2>
+    <h2>${sf === 'archived' ? 'Archived changes' : 'Active changes'} <span class="c num">${sf ? pool.filter(c => c.status === sf).length : m.active.length}</span><span class="hn">${sf ? `showing ${esc(STATUS[sf])} only<button class="small" id="stageclear">show all</button>` : 'grouped by state'}</span></h2>
     ${sf ? (pool.some(c => c.status === sf) ? ledger : `<div class="empty">No change is at the ${esc(STATUS[sf])} stage.</div>`) : m.active.length ? ledger : '<div class="empty">No active changes. Everything is archived, or nothing has been proposed yet.</div>'}
-    <h2>Needs attention <span class="hn">${m.issues.length ? `${nWarn} warnings, ${nInfo} notes` : 'nothing flagged'}</span></h2>
+    <h2>Needs attention <span class="c num">${m.issues.length}</span><span class="hn">${m.issues.length ? `${plural(nWarn, 'warning')}, ${plural(nInfo, 'note')}` : 'nothing flagged'}</span></h2>
     ${issues}
     ${impactHead}
     ${impact}
-    <h2>Capabilities <span class="hn">${plural(m.specs.length, 'spec')}${m.ghostCaps.length ? `, ${m.ghostCaps.length} proposed` : ''}</span></h2>
+    <h2>Capabilities <span class="c num">${m.specs.length}</span>${m.ghostCaps.length ? `<span class="hn">${m.ghostCaps.length} more proposed by active changes</span>` : ''}</h2>
     <div class="capgrid">${caps || '<div class="empty">No specs yet.</div>'}</div>
-    <h2>History <span class="hn">archived changes, newest first</span></h2>
+    <h2>History <span class="c num">${m.archived.length}</span><span class="hn">archived changes, newest first</span></h2>
     ${timeline}`;
 }
 
@@ -1695,9 +1697,9 @@ function renderSpecs() {
     ${sp.purpose ? `<div class="md">${md(sp.purpose)}</div>` : ''}
     ${pendRow || hist ? `<div style="margin-top:14px">${pendRow}${hist}</div>` : ''}
     ${sp.other.length ? `<div class="reqs" style="margin-top:16px">${sp.other.map(o => `<details class="req" data-key="spec:${esc(sp.id)}:§${esc(o.title)}" ${state.open.has(`spec:${sp.id}:§${o.title}`) ? 'open' : ''}><summary><span class="rn">${esc(o.title)}</span><span class="rm">section</span></summary><div class="rb md">${md(o.body)}</div></details>`).join('')}</div>` : ''}
-    <div class="h2row"><h2>Requirements</h2><div class="row"><input type="search" id="reqsearch" placeholder="Search requirements" aria-label="Search requirements" value="${esc(state.reqFilter || '')}" style="width:220px"><button class="small" data-expand="1">Expand all</button><button class="small" data-expand="0">Collapse all</button></div></div>
+    <div class="h2row"><h2>Requirements <span class="c num">${sp.requirements.length}</span></h2><div class="row"><input type="search" id="reqsearch" placeholder="Search requirements" aria-label="Search requirements" value="${esc(state.reqFilter || '')}" style="width:220px"><button class="small" data-expand="1">Expand all</button><button class="small" data-expand="0">Collapse all</button></div></div>
     ${reqHtml ? `<div class="reqs">${reqHtml}</div>` : '<div class="empty">No requirement matches.</div>'}
-    ${pendingAdds ? `<h2>Proposed additions <span class="hn">from active changes, not yet in the spec</span></h2><div class="reqs">${pendingAdds}</div>` : ''}
+    ${pendingAdds ? `<h2>Proposed additions <span class="c num">${sp.pendingAdds.length}</span><span class="hn">from active changes, not yet in the spec</span></h2><div class="reqs">${pendingAdds}</div>` : ''}
     ${sp.design ? `<h2>Design</h2><div class="md">${md(sp.design)}</div>` : ''}
   </section></div>`;
 }
@@ -1794,8 +1796,8 @@ function renderProject() {
     ${c._raw ? `<h2>config.yaml</h2>${cfgKeys.length ? `<div class="row" style="margin-bottom:12px">${cfgKeys.map(k => `<span class="tag"><b>${esc(k)}</b> ${esc(String(c[k]).split('\n')[0].slice(0, 60))}${String(c[k]).includes('\n') ? '…' : ''}</span>`).join('')}</div>` : ''}${c.context ? `<h3>Context</h3><pre>${esc(c.context)}</pre>` : ''}<details data-key="cfg:raw" ${state.open.has('cfg:raw') ? 'open' : ''}><summary class="small muted" style="cursor:pointer">Raw file</summary><pre>${esc(c._raw)}</pre></details>` : ''}
     ${p.md ? `<h2>project.md</h2><div class="md">${md(p.md)}</div>` : ''}
     ${p.agents ? `<h2>AGENTS.md</h2><div class="md">${md(p.agents)}</div>` : ''}
-    ${p.looseChangeFiles.length ? `<h2>Files directly under changes/</h2>${p.looseChangeFiles.map(f => `<h3>${esc(f.path)}</h3><div class="md">${md(f.text)}</div>`).join('')}` : ''}
-    ${p.otherTop.length ? `<h2>Other files</h2><ul class="filelist">${p.otherTop.map(f => `<li>${esc(f.path)}</li>`).join('')}</ul>` : ''}
+    ${p.looseChangeFiles.length ? `<h2>Files directly under changes/ <span class="c num">${p.looseChangeFiles.length}</span></h2>${p.looseChangeFiles.map(f => `<h3>${esc(f.path)}</h3><div class="md">${md(f.text)}</div>`).join('')}` : ''}
+    ${p.otherTop.length ? `<h2>Other files <span class="c num">${p.otherTop.length}</span></h2><ul class="filelist">${p.otherTop.map(f => `<li>${esc(f.path)}</li>`).join('')}</ul>` : ''}
     ${!c._raw && !p.md ? '<div class="empty">No project.md or config.yaml at the openspec root.</div>' : ''}`;
 }
 

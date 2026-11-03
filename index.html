@@ -771,7 +771,8 @@ function buildModel(files) {
     active: active.length, archived: archived.length,
     tasksTotal: active.reduce((n, c) => n + (c.tasks?.total || 0), 0),
     tasksDone: active.reduce((n, c) => n + (c.tasks?.done || 0), 0),
-    deltas: active.reduce((n, c) => n + c.deltas.reduce((m, d) => m + d.count, 0), 0)
+    deltas: active.reduce((n, c) => n + c.deltas.reduce((m, d) => m + d.count, 0), 0),
+    deltaFiles: active.reduce((n, c) => n + c.deltas.length, 0)
   };
   const project = { md: get('project.md')?.text || '', config: parseYamlLite(get('config.yaml')?.text || get('config.yml')?.text || ''), agents: get('AGENTS.md')?.text || '', otherTop: otherTop.filter(f => !/^(project\.md|config\.ya?ml|AGENTS\.md)$/i.test(f.path)), looseChangeFiles };
   const model = { specs: specList, specMap: specs, changes: changeList, active, archived, ghostCaps: [...ghostCaps.values()], stats, project, fileCount: files.length };
@@ -973,7 +974,7 @@ function svgImpact(I) {
     const lab = n.side === 'L'
       ? `<text x="${n.x - 8}" y="${cy}" text-anchor="end"><tspan>${esc(n.text)}</tspan>${tail}</text>`
       : `<text x="${n.x + n.w + 8}" y="${cy}"><tspan>${esc(n.text)}</tspan>${tail}</text>`;
-    return `<g class="node${n.ghost ? ' ghost' : ''}" ${n.side === 'L' ? 'data-ch' : 'data-cap'}="${esc(n.id)}"><title>${esc(`${n.name}: ${plural(+n.count, 'delta')}${n.ghost ? ', new capability' : ''}`)}</title><rect class="nb" x="${n.x}" y="${r1(n.y)}" width="${n.w}" height="${r1(n.h)}" rx="1"/><a href="${esc(href)}">${lab}</a></g>`;
+    return `<g class="node${n.ghost ? ' ghost' : ''}" ${n.side === 'L' ? 'data-ch' : 'data-cap'}="${esc(n.id)}"><title>${esc(`${n.name}: ${plural(+n.count, 'requirement change')}${n.ghost ? ', new capability' : ''}`)}</title><rect class="nb" x="${n.x}" y="${r1(n.y)}" width="${n.w}" height="${r1(n.h)}" rx="1"/><a href="${esc(href)}">${lab}</a></g>`;
   };
   const band = b => {
     const mx = r1((b.x0 + b.x1) / 2), y0 = r1(b.y0), y1 = r1(b.y1), y0b = r1(b.y0 + b.t), y1b = r1(b.y1 + b.t);
@@ -1505,15 +1506,15 @@ function requirementHtml(r, key, { badges = '', cls = '', extra = '' } = {}) {
 // the six OpenSpec terms, in the order the relationship reads: what the system is, then what changes it
 const VOCAB = [
   { n: 'Capability', w: 'specs/<name>/spec.md', p: 'One area of behaviour the system has today. Its spec is the source of truth, and is only ever rewritten by archiving a change.', c: (m, s) => [`${plural(s.specs, 'spec')}${m.ghostCaps.length ? `, ${m.ghostCaps.length} proposed` : ''}`, link('specs')] },
-  { n: 'Requirement', w: '### Requirement:', p: 'One thing a capability SHALL do. A spec is a list of requirements, and deltas are written at this level.', c: (m, s) => [plural(s.requirements, 'requirement'), link('specs')] },
+  { n: 'Requirement', w: '### Requirement:', p: 'One thing a capability SHALL do. A spec is a list of requirements, and spec deltas change specs at this level.', c: (m, s) => [plural(s.requirements, 'requirement'), link('specs')] },
   { n: 'Scenario', w: '#### Scenario:', p: 'A concrete GIVEN, WHEN, THEN case that proves a requirement holds. Every requirement needs at least one.', c: (m, s) => [plural(s.scenarios, 'scenario'), link('specs')] },
   { n: 'Change', w: 'changes/<name>/', p: 'A proposal to alter the system: a proposal.md saying why, an optional design.md saying how, spec deltas saying what, and a tasks.md listing the work. Active while under changes/, archived once moved to changes/archive/.', c: (m, s) => [`${s.active} active, ${s.archived} archived`, link('changes')] },
-  { n: 'Spec delta', w: 'changes/<name>/specs/<capability>/spec.md', p: 'The requirements a change ADDS, MODIFIES, REMOVES or RENAMES in one capability. One delta per capability touched, so a change’s deltas are exactly the capabilities it touches. Archiving merges them into the spec.', c: (m, s) => [`${s.deltas} pending in ${plural(m.active.filter(c => c.deltas.length).length, 'change')}`, link('changes')] },
+  { n: 'Spec delta', w: 'changes/<name>/specs/<capability>/spec.md', p: 'One file per capability a change touches, listing the requirement changes it makes there: the requirements it ADDS, MODIFIES, REMOVES or RENAMES. A change’s deltas are exactly the capabilities it touches. Archiving merges each delta into its capability’s spec.', c: (m, s) => [`${s.deltaFiles} pending in ${plural(m.active.filter(c => c.deltas.length).length, 'change')}`, link('changes')] },
   { n: 'Task', w: 'changes/<name>/tasks.md', p: 'A checklist item: the implementation work that makes a change’s deltas true. Ticking tasks moves a change from Not started through In progress to Complete.', c: (m, s) => [`${s.tasksDone} of ${s.tasksTotal} done`, link('changes')] }
 ];
 function renderVocab(m) {
   const s = m.stats;
-  return `<p class="chain">A <b>change</b> proposes <b>spec deltas</b> against <b>capabilities</b>. Each delta adds, modifies, removes or renames <b>requirements</b>, and every requirement is proven by <b>scenarios</b>. <b>Tasks</b> are the work that makes the deltas true; archiving the change merges its deltas into the specs.</p>
+  return `<p class="chain">A <b>change</b> proposes <b>spec deltas</b> against <b>capabilities</b>. Each delta is a list of requirement changes: the <b>requirements</b> it adds, modifies, removes or renames, and every requirement is proven by <b>scenarios</b>. <b>Tasks</b> are the work that makes the deltas true; archiving the change merges its deltas into the specs.</p>
     <div class="vocab">${VOCAB.map(t => { const [count, href] = t.c(m, s); return `<div class="term"><div class="t"><span class="n">${esc(t.n)}<span class="w">${esc(t.w)}</span></span><a class="c num" href="${href}">${esc(count)}</a></div><p class="p">${t.p}</p></div>`; }).join('')}</div>`;
 }
 function renderOverview() {
@@ -1525,7 +1526,7 @@ function renderOverview() {
     [s.requirements, 'requirements', plural(s.scenarios, 'scenario')],
     [s.active, 'active changes', `${inProg.length} in progress, ${notStarted} not started`],
     [`${pct(s.tasksDone, s.tasksTotal)}%`, 'of active tasks done', `${s.tasksDone} of ${s.tasksTotal}`],
-    [s.deltas, 'pending spec deltas', `in ${plural(m.active.filter(c => c.deltas.length).length, 'change')}`],
+    [s.deltas, 'pending requirement changes', `in ${plural(s.deltaFiles, 'spec delta')} across ${plural(m.active.filter(c => c.deltas.length).length, 'change')}`],
     [s.archived, 'archived', m.archived[0]?.archivedDate ? `last on ${m.archived[0].archivedDate}` : '']
   ];
   // ledger of active changes, grouped by state, optionally narrowed to one lifecycle stage
@@ -1632,7 +1633,7 @@ function renderChanges() {
   if (!ch) return `<div class="split">${side}<div class="empty">No changes under changes/.</div></div>`;
   const tab = state.route.tab || 'proposal';
   // tabs follow the order the OpenSpec workflow writes the files: why, how, what, then the work
-  const tabs = [['proposal', 'Proposal'], ch.design && ['design', 'Design'], ['deltas', `Spec deltas<span class="c">${ch.deltas.reduce((n, d) => n + d.count, 0)}</span>`], ['tasks', `Tasks${ch.tasks ? `<span class="c">${ch.tasks.done}/${ch.tasks.total}</span>` : ''}`], ['files', `Files<span class="c">${ch.files.length}</span>`, 'aside']].filter(Boolean);
+  const tabs = [['proposal', 'Proposal'], ch.design && ['design', 'Design'], ['deltas', `Spec deltas<span class="c">${ch.deltas.length}</span>`], ['tasks', `Tasks${ch.tasks ? `<span class="c">${ch.tasks.done}/${ch.tasks.total}</span>` : ''}`], ['files', `Files<span class="c">${ch.files.length}</span>`, 'aside']].filter(Boolean);
   let body = '';
   if (tab === 'proposal') body = ch.proposal.raw ? `<div class="md">${md(ch.proposal.raw)}</div>` : '<div class="empty">This change has no proposal.md.</div>';
   else if (tab === 'tasks') body = renderTasks(ch);
@@ -1640,17 +1641,19 @@ function renderChanges() {
   else if (tab === 'design') body = `<div class="md">${md(ch.design)}</div>`;
   else if (tab === 'files') body = `<ul class="filelist">${ch.files.map(f => `<li>${esc(f.rel)}${f.mtime ? ` <span class="muted">${ago(f.mtime)}</span>` : ''}${f.text ? ` <span class="muted">${f.text.length.toLocaleString()} chars</span>` : ''}</li>`).join('')}</ul>${state.source.type === 'github' ? `<p class="small"><a href="https://github.com/${esc(state.source.repo.owner)}/${esc(state.source.repo.repo)}/tree/${esc(state.source.repo.ref)}/${esc(state.source.url.split('/tree/' + state.source.repo.ref + '/')[1] || '')}${esc(ch.dir)}" target="_blank" rel="noopener">Open this folder on GitHub</a></p>` : ''}`;
   const nDeltas = ch.deltas.reduce((n, d) => n + d.count, 0);
+  const breakdown = ['added', 'modified', 'removed', 'renamed'].map(k => [ch.deltas.reduce((n, d) => n + d[k].length, 0), k]).filter(([n]) => n).map(([n, k]) => `${n} ${k}`).join(', ');
   const cells = [
     [pill(ch), 'state'],
     ch.tasks ? [`${pct(ch.tasks.done, ch.tasks.total)}%`, 'tasks done', `${ch.tasks.done} of ${ch.tasks.total}`] : ['0', 'tasks', 'no tasks.md yet'],
-    [nDeltas, 'spec deltas', ch.deltas.length ? `across ${ch.deltas.length} ${ch.deltas.length === 1 ? 'capability' : 'capabilities'}` : ''],
+    [ch.deltas.length, ch.deltas.length === 1 ? 'spec delta' : 'spec deltas', ch.deltas.length ? 'one per capability touched' : ''],
+    [nDeltas, nDeltas === 1 ? 'requirement change' : 'requirement changes', breakdown],
     ch.archivedDate ? [esc(ch.archivedDate), 'archived'] : ch.created ? [esc(ch.created), 'created'] : null
   ];
   const metaParts = [`<span class="path">${esc(ch.dir)}</span>`, ch.created && ch.archivedDate && `created ${esc(ch.created)}`, ch.mtime && `updated ${ago(ch.mtime)}`, ch.schema && `schema ${esc(ch.schema)}`];
   return `<div class="split">${side}<section>
     ${pageHead(esc(ch.name), metaParts, cells)}
     ${ch.tasks && !ch.archived ? `<div class="row" style="gap:12px;margin-bottom:8px"><div style="flex:1">${bar(ch.tasks.done, ch.tasks.total, true)}</div></div>` : ''}
-    ${ch.deltas.length ? `<div class="row" style="gap:6px"><span class="small muted">Touches</span>${ch.deltas.map(d => `<a class="tag" href="${link('changes', ch.key, 'deltas')}">${esc(d.capability)} ${deltaBadges(d)}${m.specMap.has(d.capability) ? '' : ' <span class="badge new">new</span>'}</a>`).join('')}</div>` : ''}
+    ${ch.deltas.length ? `<div class="row" style="gap:6px"><span class="small">Spec deltas <span class="muted">${ch.archived ? `merged into these capabilities${ch.archivedDate ? ` on ${esc(ch.archivedDate)}` : ''}` : 'one per capability this change touches'}</span></span>${ch.deltas.map(d => `<a class="tag" href="${link('changes', ch.key, 'deltas')}">${esc(d.capability)} ${deltaBadges(d)}${m.specMap.has(d.capability) ? '' : ' <span class="badge new">new</span>'}</a>`).join('')}</div>` : ''}
     <div class="tabs">${tabs.map(([t, l, cls]) => `<a href="${link('changes', ch.key, t)}" class="${[tab === t && 'on', cls].filter(Boolean).join(' ')}">${l}</a>`).join('')}</div>
     ${body}
   </section></div>`;
@@ -1669,7 +1672,11 @@ function renderDeltas(ch) {
   const m = state.model;
   if (!ch.deltas.length) return '<div class="empty">This change carries no spec deltas: there is no specs/&lt;capability&gt;/spec.md inside it.</div>';
   const norm = s => s.trim().toLowerCase().replace(/\s+/g, ' ');
-  return ch.deltas.map(d => {
+  const n = plural(ch.deltas.length, 'spec delta');
+  const lead = `<p class="chain" style="margin-bottom:20px">${ch.archived
+    ? `${n}, one per capability. Each was this change’s specs/&lt;capability&gt;/spec.md. Archiving${ch.archivedDate ? ` on ${esc(ch.archivedDate)}` : ''} merged them into the capability specs, so the current spec of each capability below already includes these requirement changes.`
+    : `${n}, one per capability. Each is this change’s own specs/&lt;capability&gt;/spec.md and lists the requirements it adds, modifies, removes or renames in that capability. They are applied when the change is archived; until then the current specs do not include them.`}</p>`;
+  return lead + ch.deltas.map(d => {
     const sp = m.specMap.get(d.capability);
     const cur = name => sp?.requirements.find(r => norm(r.name) === norm(resolveDeltaName(d, name)));
     const block = (list, kind, label, cls) => list.map(r => {
@@ -1692,6 +1699,7 @@ function renderDeltas(ch) {
     const ren = d.renamed.length ? `<div class="renames">${d.renamed.map(r => `<div class="row"><span class="badge ren">renamed</span><span>${esc(r.from)}</span><span class="muted">→</span><b>${esc(r.to)}</b>${!sp?.requirements.some(x => norm(x.name) === norm(r.from)) ? `<span class="badge gray" title="No requirement with the old name exists in the current spec">not in spec</span>` : ''}</div>`).join('')}</div>` : '';
     const blocks = `${block(d.added, 'added', 'added', 'add')}${block(d.modified, 'modified', 'modified', 'mod')}${block(d.removed, 'removed', 'removed', 'rem')}`;
     return `<section style="margin-bottom:28px"><div class="h2row"><h2>${sp ? `<a href="${link('specs', d.capability)}" style="color:inherit;text-decoration:none">${esc(d.capability)}</a>` : `${esc(d.capability)} <span class="badge new">new capability</span>`} <span class="row" style="gap:3px">${deltaBadges(d)}</span></h2><div class="row"><button class="small" data-expand="1">Expand all</button><button class="small" data-expand="0">Collapse all</button></div></div>
+      <div class="small muted row" style="gap:10px;margin-bottom:12px"><code>specs/${esc(d.capability)}/spec.md</code><span>${plural(d.count, 'requirement change')}</span>${sp ? `<a href="${link('specs', d.capability)}">${ch.archived ? 'current spec, which includes this delta' : 'current spec'}</a>` : '<span>new capability: this delta creates its spec</span>'}</div>
       ${d.purpose ? `<div class="md" style="margin-bottom:12px">${md(d.purpose)}</div>` : ''}
       ${blocks ? `<div class="reqs">${blocks}</div>` : ''}${ren}
       ${d.other.length ? `<div class="reqs" style="margin-top:12px">${d.other.map(o => `<details class="req" data-key="d:${esc(ch.key)}:${esc(d.capability)}:§${esc(o.title)}" ${state.open.has(`d:${ch.key}:${d.capability}:§${o.title}`) ? 'open' : ''}><summary><span class="rn">${esc(o.title)}</span><span class="rm">section</span></summary><div class="rb md">${md(o.body)}</div></details>`).join('')}</div>` : ''}

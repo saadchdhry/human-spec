@@ -29,11 +29,11 @@ OpenSpec work moves through the same stages in every repository: a change is pro
 
 ![A change page on the tasks tab: sections of checklist items with a progress bar per section](docs/story-change.png)
 
-**4. What a change proposes.** Spec deltas list the requirements a change adds, modifies, removes or renames, capability by capability, with a word-level diff of each modified requirement against the current spec.
+**4. What a change proposes.** A change carries one spec delta per capability it touches, and each delta lists its requirement changes: the requirements it adds, modifies, removes or renames there, with a word-level diff of each modified requirement against the current spec.
 
 ![The deltas tab of a change: a modified requirement shown as a word-level diff against the current spec](docs/story-deltas.png)
 
-**5. What the changes touch.** The impact flow draws the active changes on the left and the capabilities on the right, with a band per spec delta coloured by kind. Hover a change to see only what it touches, or switch to the matrix.
+**5. What the changes touch.** The impact flow draws the active changes on the left and the capabilities on the right, with a band for each kind of requirement change in each spec delta, as wide as the number of requirement changes and coloured by kind. Hover a change to see only what it touches, or switch to the matrix.
 
 ![The impact flow with one change hovered: its bands and the capabilities it touches stay bright while the rest fade](docs/story-impact.png)
 
@@ -62,7 +62,7 @@ The browser asks once per folder whether the page may "view and copy" files. Tha
 
 ## What it shows
 
-- **Overview.** A title block of counts, a flow diagram of the change lifecycle with each active change placed in its stage (click a stage to filter the ledger), a ledger of active changes grouped by state, a needs-attention list, an impact flow of change → capability with a band per spec delta (switchable to a matrix), the capabilities, the archive history, and a vocabulary of the six OpenSpec terms with the repository’s live counts.
+- **Overview.** A title block of counts, a flow diagram of the change lifecycle with each active change placed in its stage (click a stage to filter the ledger), a ledger of active changes grouped by state, a needs-attention list, an impact flow of change → capability with bands sized by requirement changes (switchable to a matrix), the capabilities, the archive history, and a vocabulary of the six OpenSpec terms with the repository’s live counts.
 - **Specs.** Each capability's purpose and requirements with their scenarios. A requirement with history opens with a lineage strip of the archived changes that added, modified or renamed it, and any pending edits. Requirements carry badges linking to the active change that modifies, removes or renames them. Proposed additions appear below.
 - **Changes.** Tabs in the order the workflow writes them: proposal, design, spec deltas with a word-level diff of each modified requirement against the current spec, tasks grouped by section with progress, and the file list.
 - **Project.** `project.md` and `config.yaml`.

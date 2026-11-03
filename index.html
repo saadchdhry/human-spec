@@ -254,7 +254,7 @@ a.tag:hover{border-color:var(--ink-2);color:var(--ink)}
 
 /* side list */
 .split{display:grid;grid-template-columns:270px minmax(0,1fr);gap:36px;align-items:start}
-@media (max-width:900px){.split{grid-template-columns:1fr;gap:20px}.side{position:static!important;max-height:none!important;border-right:0!important;padding-right:0!important;border-bottom:1px solid var(--rule);padding-bottom:12px}}
+@media (max-width:900px){.split{grid-template-columns:minmax(0,1fr);gap:20px}.side{position:static!important;max-height:none!important;border-right:0!important;padding-right:0!important;border-bottom:1px solid var(--rule);padding-bottom:12px}}
 .side{position:sticky;top:60px;max-height:calc(100vh - 80px);overflow:auto;padding-right:18px;border-right:1px solid var(--rule)}
 .side h4{margin:16px 0 6px;font-size:12.5px;font-weight:600;color:var(--muted);display:flex;justify-content:space-between;gap:8px}
 .side h4:first-child{margin-top:4px}
@@ -284,6 +284,9 @@ details.req .rb .notice{font-size:13px}
 details.req.pending{border-left:2px dashed var(--good)}
 details.req.pending>summary{padding-left:4px}
 details.req.removed>summary .rn{text-decoration:line-through;text-decoration-color:var(--crit);color:var(--ink-2)}
+.reqw{border-bottom:1px solid var(--hair)}
+.reqw>details.req{border-bottom:0}
+.reqw>.dia-lineage{margin:0 0 12px 30px}
 .scn{margin:12px 0 0;padding:6px 0 6px 14px;border-left:2px solid var(--accent-soft)}
 .scn .st{font-family:var(--sans);font-weight:600;font-size:13px;color:var(--ink-2);margin-bottom:4px}
 .scn ul{list-style:none;padding:0;margin:0}
@@ -409,7 +412,8 @@ kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--rule);border-b
 .dia .node,.dia .band{transition:opacity .12s}
 .dia svg.focus .band:not(.on),.dia svg.focus .node:not(.on){opacity:.12}
 @media (prefers-reduced-motion:reduce){.dia .node,.dia .band{transition:none}}
-.dia-lineage{overflow-x:auto;margin:2px 0 14px;max-width:100%}
+.dia-lineage{overflow-x:auto;margin:2px 0 14px;max-width:100%;display:flex}
+.dia-lineage svg{flex:none;margin-left:auto}
 .dia .bl{stroke:var(--rule);stroke-width:1.5}
 .dia .bl.pend{stroke-dasharray:4 3}
 .dia .mkbg{fill:var(--sheet)}
@@ -1446,6 +1450,7 @@ function wireCommon() {
   $('#specsearch') && ($('#specsearch').oninput = e => { state.specFilter = e.target.value; renderSideSpecs(); });
   $('#reqsearch') && ($('#reqsearch').oninput = e => { state.reqFilter = e.target.value; render({ keepScroll: true }); setTimeout(() => { const i = $('#reqsearch'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }); });
   for (const b of document.querySelectorAll('[data-expand]')) b.onclick = () => { const open = b.dataset.expand === '1'; for (const d of b.closest('section, main').querySelectorAll('details[data-key]')) { d.open = open; if (open) state.open.add(d.dataset.key); else state.open.delete(d.dataset.key); } };
+  for (const el of document.querySelectorAll('.dia-lineage')) el.scrollLeft = el.scrollWidth;
   for (const b of document.querySelectorAll('[data-dv]')) b.onclick = () => { state.deltaView[b.dataset.key] = b.dataset.dv; render({ keepScroll: true }); };
   const lc = $('.dia-lifecycle[data-live]');
   if (lc) lc.onclick = lc.onkeydown = e => {
@@ -1568,12 +1573,13 @@ const pageHead = (title, metaParts, cells, cls = '') => `<div class="head${cls ?
 function scenarioHtml(sc) {
   return `<div class="scn"><div class="st">${esc(sc.name)}</div><ul>${sc.steps.map(s => `<li>${s.kw ? `<span class="kw ${s.kw}">${s.kw}</span>` : ''}<span>${inline(s.text)}</span></li>`).join('')}</ul></div>`;
 }
-function requirementHtml(r, key, { badges = '', cls = '', extra = '' } = {}) {
+function requirementHtml(r, key, { badges = '', cls = '', extra = '', timeline = '' } = {}) {
   const open = state.open.has(key);
-  return `<details class="req ${cls}" data-key="${esc(key)}" ${open ? 'open' : ''}>
+  const req = `<details class="req ${cls}" data-key="${esc(key)}" ${open ? 'open' : ''}>
     <summary><span class="rn">${esc(r.name)}</span>${badges}<span class="rm">${plural(r.scenarios.length, 'scenario')}</span></summary>
     <div class="rb">${extra}${r.reason ? `<div class="notice"><b>Reason:</b> ${inline(r.reason)}</div>` : ''}<div class="md">${md(r.text.replace(/\*\*Reason\*\*:?[\s\S]*?(\n\n|$)/, ''))}</div>${r.scenarios.map(scenarioHtml).join('')}</div>
   </details>`;
+  return timeline ? `<div class="reqw">${req}${timeline}</div>` : req;
 }
 
 // ---------- overview ----------
@@ -1675,8 +1681,8 @@ function renderSpecs() {
     const mods = modsFor(r), rems = remsFor(r), rens = rensFor(r);
     const badges = [...mods.map(p => `<a class="badge mod" href="${link('changes', p.ch.key, 'deltas')}" title="Modified by ${esc(p.ch.name)}">modified in ${esc(p.ch.name)}</a>`), ...rems.map(p => `<a class="badge rem" href="${link('changes', p.ch.key, 'deltas')}">removed in ${esc(p.ch.name)}</a>`), ...rens.map(p => `<a class="badge ren" href="${link('changes', p.ch.key, 'deltas')}" title="New name: ${esc(p.r.to)}">renamed in ${esc(p.ch.name)}</a>`)].join(' ');
     const lin = layoutLineage(sp, r);
-    const extra = lin.events.length ? `<div class="dia dia-lineage">${svgLineage(lin)}</div>` : '';
-    return requirementHtml(r, `spec:${sp.id}:${r.name}`, { badges, cls: rems.length ? 'removed' : '', extra });
+    const timeline = lin.events.length ? `<div class="dia dia-lineage">${svgLineage(lin)}</div>` : '';
+    return requirementHtml(r, `spec:${sp.id}:${r.name}`, { badges, cls: rems.length ? 'removed' : '', timeline });
   }).join('');
   const pendingAdds = sp.pendingAdds.filter(p => !f || p.r.name.toLowerCase().includes(f)).map(p => requirementHtml(p.r, `spec:${sp.id}:+${p.ch.key}:${p.r.name}`, { badges: `<a class="badge add" href="${link('changes', p.ch.key, 'deltas')}">added in ${esc(p.ch.name)}</a>`, cls: 'pending' })).join('');
   const nScen = sp.requirements.reduce((n, r) => n + r.scenarios.length, 0);

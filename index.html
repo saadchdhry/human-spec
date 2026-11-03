@@ -330,6 +330,7 @@ details.req.removed>summary .rn{text-decoration:line-through;text-decoration-col
 .tabs a:hover{color:var(--ink)}
 .tabs a.on{color:var(--ink);border-color:var(--ink)}
 .tabs a .c{color:var(--muted);font-size:12px;margin-left:5px;font-variant-numeric:tabular-nums}
+.tabs a.aside{margin-left:auto;font-weight:400}
 
 /* welcome + dialog */
 .welcome{max-width:920px;margin:28px auto 0}
@@ -1631,7 +1632,7 @@ function renderChanges() {
   if (!ch) return `<div class="split">${side}<div class="empty">No changes under changes/.</div></div>`;
   const tab = state.route.tab || 'proposal';
   // tabs follow the order the OpenSpec workflow writes the files: why, how, what, then the work
-  const tabs = [['proposal', 'Proposal'], ch.design && ['design', 'Design'], ['deltas', `Spec deltas<span class="c">${ch.deltas.reduce((n, d) => n + d.count, 0)}</span>`], ['tasks', `Tasks${ch.tasks ? `<span class="c">${ch.tasks.done}/${ch.tasks.total}</span>` : ''}`], ['files', `Files<span class="c">${ch.files.length}</span>`]].filter(Boolean);
+  const tabs = [['proposal', 'Proposal'], ch.design && ['design', 'Design'], ['deltas', `Spec deltas<span class="c">${ch.deltas.reduce((n, d) => n + d.count, 0)}</span>`], ['tasks', `Tasks${ch.tasks ? `<span class="c">${ch.tasks.done}/${ch.tasks.total}</span>` : ''}`], ['files', `Files<span class="c">${ch.files.length}</span>`, 'aside']].filter(Boolean);
   let body = '';
   if (tab === 'proposal') body = ch.proposal.raw ? `<div class="md">${md(ch.proposal.raw)}</div>` : '<div class="empty">This change has no proposal.md.</div>';
   else if (tab === 'tasks') body = renderTasks(ch);
@@ -1650,7 +1651,7 @@ function renderChanges() {
     ${pageHead(esc(ch.name), metaParts, cells)}
     ${ch.tasks && !ch.archived ? `<div class="row" style="gap:12px;margin-bottom:8px"><div style="flex:1">${bar(ch.tasks.done, ch.tasks.total, true)}</div></div>` : ''}
     ${ch.deltas.length ? `<div class="row" style="gap:6px"><span class="small muted">Touches</span>${ch.deltas.map(d => `<a class="tag" href="${link('changes', ch.key, 'deltas')}">${esc(d.capability)} ${deltaBadges(d)}${m.specMap.has(d.capability) ? '' : ' <span class="badge new">new</span>'}</a>`).join('')}</div>` : ''}
-    <div class="tabs">${tabs.map(([t, l]) => `<a href="${link('changes', ch.key, t)}" class="${tab === t ? 'on' : ''}">${l}</a>`).join('')}</div>
+    <div class="tabs">${tabs.map(([t, l, cls]) => `<a href="${link('changes', ch.key, t)}" class="${[tab === t && 'on', cls].filter(Boolean).join(' ')}">${l}</a>`).join('')}</div>
     ${body}
   </section></div>`;
 }

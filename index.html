@@ -1306,7 +1306,7 @@ async function tryRestore() {
 function parseHash() {
   const h = location.hash.replace(/^#\/?/, '');
   const [view, id, tab] = h.split('/').map(decodeURIComponent);
-  state.route = { view: ['overview', 'specs', 'changes', 'project'].includes(view) ? view : 'overview', id: id || null, tab: tab || null };
+  state.route = { view: ['overview', 'specs', 'changes', 'project', 'help'].includes(view) ? view : 'overview', id: id || null, tab: tab || null };
 }
 window.addEventListener('hashchange', () => { parseHash(); render(); window.scrollTo(0, 0); });
 const link = (view, id, tab) => '#/' + [view, id, tab].filter(Boolean).map(encodeURIComponent).join('/');
@@ -1314,7 +1314,7 @@ const link = (view, id, tab) => '#/' + [view, id, tab].filter(Boolean).map(encod
 // ---------- rendering: chrome ----------
 function renderNav() {
   const m = state.model;
-  const items = [['overview', 'Overview'], ['specs', `Specs${m ? ` <span class="c num">${m.stats.specs}</span>` : ''}`], ['changes', `Changes${m ? ` <span class="c num">${m.stats.active}</span>` : ''}`], ['project', 'Project']];
+  const items = [['overview', 'Overview'], ['specs', `Specs${m ? ` <span class="c num">${m.stats.specs}</span>` : ''}`], ['changes', `Changes${m ? ` <span class="c num">${m.stats.active}</span>` : ''}`], ['project', 'Project'], ['help', 'Help']];
   $('#nav').innerHTML = items.map(([v, l]) => `<a href="${link(v)}" class="${state.route.view === v ? 'on' : ''}">${l}</a>`).join('');
 }
 const THEMES = ['light', 'dark', 'system'];
@@ -1357,10 +1357,11 @@ function render({ keepScroll } = {}) {
   const y = window.scrollY;
   renderNav(); renderSrcBar();
   const app = $('#app');
-  if (!state.model) { app.innerHTML = renderWelcome(); wireWelcome(); return; }
   const v = state.route.view;
+  if (!state.model && v === 'help') { app.innerHTML = renderHelp(); wireCommon(); return; }
+  if (!state.model) { app.innerHTML = renderWelcome(); wireWelcome(); return; }
   app.innerHTML = state.error ? `<div class="err">${esc(state.error)}</div>` : '';
-  app.innerHTML += v === 'specs' ? renderSpecs() : v === 'changes' ? renderChanges() : v === 'project' ? renderProject() : renderOverview();
+  app.innerHTML += v === 'specs' ? renderSpecs() : v === 'changes' ? renderChanges() : v === 'project' ? renderProject() : v === 'help' ? renderHelp() : renderOverview();
   wireCommon();
   if (keepScroll) window.scrollTo(0, y);
 }
@@ -1513,9 +1514,9 @@ const VOCAB = [
   { n: 'Task', w: 'changes/<name>/tasks.md', p: 'A checklist item: the implementation work that makes a change’s deltas true. Ticking tasks moves a change from Not started through In progress to Complete.', c: (m, s) => [`${s.tasksDone} of ${s.tasksTotal} done`, link('changes')] }
 ];
 function renderVocab(m) {
-  const s = m.stats;
+  const s = m?.stats;
   return `<p class="chain">A <b>change</b> proposes <b>spec deltas</b> against <b>capabilities</b>. Each delta is a list of requirement changes: the <b>requirements</b> it adds, modifies, removes or renames, and every requirement is proven by <b>scenarios</b>. <b>Tasks</b> are the work that makes the deltas true; archiving the change merges its deltas into the specs.</p>
-    <div class="vocab">${VOCAB.map(t => { const [count, href] = t.c(m, s); return `<div class="term"><div class="t"><span class="n">${esc(t.n)}<span class="w">${esc(t.w)}</span></span><a class="c num" href="${href}">${esc(count)}</a></div><p class="p">${t.p}</p></div>`; }).join('')}</div>`;
+    <div class="vocab">${VOCAB.map(t => { const [count, href] = m ? t.c(m, s) : []; return `<div class="term"><div class="t"><span class="n">${esc(t.n)}<span class="w">${esc(t.w)}</span></span>${m ? `<a class="c num" href="${href}">${esc(count)}</a>` : ''}</div><p class="p">${t.p}</p></div>`; }).join('')}</div>`;
 }
 function renderOverview() {
   const m = state.model, s = m.stats;
@@ -1573,9 +1574,7 @@ function renderOverview() {
     <h2>Capabilities <span class="hn">${plural(m.specs.length, 'spec')}${m.ghostCaps.length ? `, ${m.ghostCaps.length} proposed` : ''}</span></h2>
     <div class="capgrid">${caps || '<div class="empty">No specs yet.</div>'}</div>
     <h2>History <span class="hn">archived changes, newest first</span></h2>
-    ${timeline}
-    <h2>Vocabulary <span class="hn">the six OpenSpec terms and how they fit together</span></h2>
-    ${renderVocab(m)}`;
+    ${timeline}`;
 }
 
 // ---------- specs ----------
@@ -1719,6 +1718,15 @@ function renderProject() {
     ${p.looseChangeFiles.length ? `<h2>Files directly under changes/</h2>${p.looseChangeFiles.map(f => `<h3>${esc(f.path)}</h3><div class="md">${md(f.text)}</div>`).join('')}` : ''}
     ${p.otherTop.length ? `<h2>Other files</h2><ul class="filelist">${p.otherTop.map(f => `<li>${esc(f.path)}</li>`).join('')}</ul>` : ''}
     ${!c._raw && !p.md ? '<div class="empty">No project.md or config.yaml at the openspec root.</div>' : ''}`;
+}
+
+// ---------- help ----------
+function renderHelp() {
+  return `${pageHead('Help', ['how OpenSpec fits together'])}
+    <h2>How work flows <span class="hn">the stages a change moves through</span></h2>
+    <div class="dia dia-lifecycle">${svgLifecycle(layoutLifecycle(null), { explainer: true })}</div>
+    <h2>Vocabulary <span class="hn">the six OpenSpec terms and how they fit together</span></h2>
+    ${renderVocab(state.model)}`;
 }
 
 // ---------- boot ----------

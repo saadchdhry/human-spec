@@ -107,7 +107,7 @@ button.ibtn:hover{background:var(--well)}
 .dot.busy{background:var(--warn);animation:pulse 1s infinite}
 .dot.err{background:var(--crit)}
 @keyframes pulse{50%{opacity:.3}}
-@media (prefers-reduced-motion:reduce){.dot.busy{animation:none}.bar i{transition:none}details.req>summary::before{transition:none}}
+@media (prefers-reduced-motion:reduce){.dot.busy{animation:none}.bar i{transition:none}.req>summary::before,.req>.rh::before{transition:none}}
 label.tgl{display:inline-flex;align-items:center;gap:5px;cursor:pointer;user-select:none}
 label.tgl input{margin:0;accent-color:var(--ink)}
 label.sw input{appearance:none;-webkit-appearance:none;width:28px;height:16px;border-radius:8px;background:var(--rule);position:relative;cursor:pointer;flex:none;transition:background .15s}
@@ -271,23 +271,21 @@ a.tag:hover{border-color:var(--ink-2);color:var(--ink)}
 
 /* requirements */
 .reqs{border-top:1px solid var(--rule)}
-details.req{border-bottom:1px solid var(--hair)}
-details.req>summary{list-style:none;cursor:pointer;padding:10px 4px 10px 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-details.req>summary:hover{background:var(--well)}
-details.req>summary::-webkit-details-marker{display:none}
-details.req>summary::before{content:"";width:6px;height:6px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:rotate(-45deg);transition:transform .15s;flex:none;margin:0 6px 0 8px}
-details.req[open]>summary::before{transform:rotate(45deg)}
-details.req>summary .rn{font-weight:600;flex:1 1 auto;min-width:0}
-details.req>summary .rm{font-size:12px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
-details.req .rb{padding:2px 0 18px 30px;font-family:var(--serif);font-size:15px;line-height:1.55;max-width:78ch}
-details.req .rb .row,details.req .rb .notice,details.req .rb .badge{font-family:var(--sans);font-size:13px}
-details.req .rb .notice{font-size:13px}
-details.req.pending{border-left:2px dashed var(--good)}
-details.req.pending>summary{padding-left:4px}
-details.req.removed>summary .rn{text-decoration:line-through;text-decoration-color:var(--crit);color:var(--ink-2)}
-.reqw{border-bottom:1px solid var(--hair)}
-.reqw>details.req{border-bottom:0}
-.reqw>.dia-lineage{margin:0 0 12px 30px}
+.req{border-bottom:1px solid var(--hair)}
+.req>summary,.req>.rh{list-style:none;cursor:pointer;padding:10px 4px 10px 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.req>summary:hover,.req>.rh:hover{background:var(--well)}
+.req>summary::-webkit-details-marker{display:none}
+.req>summary::before,.req>.rh::before{content:"";width:6px;height:6px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:rotate(-45deg);transition:transform .15s;flex:none;margin:0 6px 0 8px}
+details.req[open]>summary::before,.req.open>.rh::before{transform:rotate(45deg)}
+.req>summary .rn,.req>.rh .rn{font-weight:600;flex:1 1 auto;min-width:0}
+.req>summary .rm,.req>.rh .rm{font-size:12px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.req>.rb{padding:2px 0 18px 30px;font-family:var(--serif);font-size:15px;line-height:1.55;max-width:78ch}
+.req>.rb .row,.req>.rb .notice,.req>.rb .badge{font-family:var(--sans);font-size:13px}
+.req>.rb .notice{font-size:13px}
+.req.pending{border-left:2px dashed var(--good)}
+.req.pending>summary,.req.pending>.rh{padding-left:4px}
+.req.removed>summary .rn,.req.removed>.rh .rn{text-decoration:line-through;text-decoration-color:var(--crit);color:var(--ink-2)}
+.req>.dia-lineage{margin:0 0 12px 30px}
 .scn{margin:12px 0 0;padding:6px 0 6px 14px;border-left:2px solid var(--accent-soft)}
 .scn .st{font-family:var(--sans);font-weight:600;font-size:13px;color:var(--ink-2);margin-bottom:4px}
 .scn ul{list-style:none;padding:0;margin:0}
@@ -1444,14 +1442,29 @@ function render({ keepScroll } = {}) {
   wireCommon();
   if (keepScroll) window.scrollTo(0, y);
 }
+// requirements use a custom disclosure so the lineage timeline can sit between heading and body
+function setOpen(el, open) {
+  if (el.tagName === 'DETAILS') el.open = open;
+  else {
+    el.classList.toggle('open', open);
+    el.querySelector(':scope>.rh').setAttribute('aria-expanded', open);
+    el.querySelector(':scope>.rb').hidden = !open;
+  }
+  if (open) state.open.add(el.dataset.key); else state.open.delete(el.dataset.key);
+}
 function wireCommon() {
   for (const d of document.querySelectorAll('details[data-key]')) {
     d.addEventListener('toggle', () => { if (d.open) state.open.add(d.dataset.key); else state.open.delete(d.dataset.key); });
   }
+  for (const h of document.querySelectorAll('.req[data-key]>.rh')) {
+    const el = h.parentElement;
+    h.onclick = e => { if (!e.target.closest('a')) setOpen(el, !el.classList.contains('open')); };
+    h.onkeydown = e => { if (e.target === h && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setOpen(el, !el.classList.contains('open')); } };
+  }
   $('#openonly') && ($('#openonly').onchange = e => { state.openOnly = e.target.checked; localStorage.setItem('osv.openOnly', state.openOnly ? '1' : '0'); render({ keepScroll: true }); });
   $('#specsearch') && ($('#specsearch').oninput = e => { state.specFilter = e.target.value; renderSideSpecs(); });
   $('#reqsearch') && ($('#reqsearch').oninput = e => { state.reqFilter = e.target.value; render({ keepScroll: true }); setTimeout(() => { const i = $('#reqsearch'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }); });
-  for (const b of document.querySelectorAll('[data-expand]')) b.onclick = () => { const open = b.dataset.expand === '1'; for (const d of b.closest('section, main').querySelectorAll('details[data-key]')) { d.open = open; if (open) state.open.add(d.dataset.key); else state.open.delete(d.dataset.key); } };
+  for (const b of document.querySelectorAll('[data-expand]')) b.onclick = () => { const open = b.dataset.expand === '1'; for (const d of b.closest('section, main').querySelectorAll('details[data-key], .req[data-key]')) setOpen(d, open); };
   for (const el of document.querySelectorAll('.dia-lineage')) el.scrollLeft = el.scrollWidth;
   for (const b of document.querySelectorAll('[data-dv]')) b.onclick = () => { state.deltaView[b.dataset.key] = b.dataset.dv; render({ keepScroll: true }); };
   const lc = $('.dia-lifecycle[data-live]');
@@ -1575,13 +1588,14 @@ const pageHead = (title, metaParts, cells, cls = '') => `<div class="head${cls ?
 function scenarioHtml(sc) {
   return `<div class="scn"><div class="st">${esc(sc.name)}</div><ul>${sc.steps.map(s => `<li>${s.kw ? `<span class="kw ${s.kw}">${s.kw}</span>` : ''}<span>${inline(s.text)}</span></li>`).join('')}</ul></div>`;
 }
+let reqSeq = 0;
 function requirementHtml(r, key, { badges = '', cls = '', extra = '', timeline = '' } = {}) {
   const open = state.open.has(key);
-  const req = `<details class="req ${cls}" data-key="${esc(key)}" ${open ? 'open' : ''}>
-    <summary><span class="rn">${esc(r.name)}</span>${badges}<span class="rm">${plural(r.scenarios.length, 'scenario')}</span></summary>
-    <div class="rb">${extra}${r.reason ? `<div class="notice"><b>Reason:</b> ${inline(r.reason)}</div>` : ''}<div class="md">${md(r.text.replace(/\*\*Reason\*\*:?[\s\S]*?(\n\n|$)/, ''))}</div>${r.scenarios.map(scenarioHtml).join('')}</div>
-  </details>`;
-  return timeline ? `<div class="reqw">${req}${timeline}</div>` : req;
+  const id = `rb${++reqSeq}`;
+  return `<div class="req ${cls}${open ? ' open' : ''}" data-key="${esc(key)}">
+    <div class="rh" role="button" tabindex="0" aria-expanded="${open}" aria-controls="${id}"><span class="rn">${esc(r.name)}</span>${badges}<span class="rm">${plural(r.scenarios.length, 'scenario')}</span></div>
+    ${timeline}<div class="rb" id="${id}"${open ? '' : ' hidden'}>${extra}${r.reason ? `<div class="notice"><b>Reason:</b> ${inline(r.reason)}</div>` : ''}<div class="md">${md(r.text.replace(/\*\*Reason\*\*:?[\s\S]*?(\n\n|$)/, ''))}</div>${r.scenarios.map(scenarioHtml).join('')}</div>
+  </div>`;
 }
 
 // ---------- overview ----------

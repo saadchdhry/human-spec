@@ -62,7 +62,7 @@ The browser asks once per folder whether the page may "view and copy" files. Tha
 
 ## What it shows
 
-- **Overview.** A title block of counts, a flow diagram of the change lifecycle with each active change placed in its stage (click a stage to filter the ledger), a ledger of active changes grouped by state, the next open tasks per change in progress, a needs-attention list, an impact flow of change → capability with a band per spec delta (switchable to a matrix), the capabilities, and the archive history.
+- **Overview.** A title block of counts, a flow diagram of the change lifecycle with each active change placed in its stage (click a stage to filter the ledger), a ledger of active changes grouped by state, a needs-attention list, an impact flow of change → capability with a band per spec delta (switchable to a matrix), the capabilities, and the archive history.
 - **Specs.** Each capability's purpose and requirements with their scenarios. A requirement with history opens with a lineage strip of the archived changes that added, modified or renamed it, and any pending edits. Requirements carry badges linking to the active change that modifies, removes or renames them. Proposed additions appear below.
 - **Changes.** Proposal, tasks grouped by section with progress, spec deltas with a word-level diff of each modified requirement against the current spec, design, and the file list.
 - **Project.** `project.md` and `config.yaml`.

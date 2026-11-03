@@ -161,8 +161,6 @@ h3{font-size:14.5px;margin:18px 0 8px;font-weight:600}
 .card{border:1px solid var(--rule);border-radius:var(--r);padding:16px 18px;background:var(--sheet)}
 .doc{border-left:2px solid var(--rule);padding:4px 0 4px 18px;margin:12px 0}
 .grid{display:grid;gap:12px}
-.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 40px}
-@media (max-width:900px){.two{grid-template-columns:1fr}}
 .bar{height:5px;background:var(--hair);border-radius:1px;overflow:hidden;position:relative}
 .bar i{display:block;height:100%;background:var(--accent);transition:width .3s}
 .bar.done i{background:var(--good)}
@@ -205,12 +203,6 @@ a.tag:hover{border-color:var(--ink-2);color:var(--ink)}
 @media (max-width:820px){.lrow{grid-template-columns:minmax(0,1fr) auto}.lrow .pg{grid-column:1/-1}.lrow .caps{grid-column:1/-1}}
 
 /* next tasks + attention */
-.nx{padding:10px 0;border-bottom:1px solid var(--hair)}
-.nx .t{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
-.nx .t a{font-weight:600;text-decoration:none;color:inherit}
-.nx ul{margin:6px 0 0;padding:0;list-style:none}
-.nx li{display:flex;gap:9px;padding:3px 0;font-size:13px;color:var(--ink-2);align-items:flex-start}
-.nx li .cb{margin-top:3px}
 .issue{display:grid;grid-template-columns:16px 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--hair);font-size:13px}
 .issue .ic{width:16px;height:16px;border-radius:1px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#1b2340;background:var(--warn);margin-top:2px}
 .issue .ic.info{background:var(--accent-soft);color:var(--accent-ink)}
@@ -1529,8 +1521,6 @@ function renderOverview() {
   const ivBtn = (v, l) => `<button class="small ${iv === v ? 'primary' : ''}" data-iv="${v}" aria-pressed="${iv === v}">${l}</button>`;
   const impactHead = `<div class="h2row"><h2>Impact <span class="hn">${impactL?.tooMany ? `${impactL.pairs} change–capability pairs are too many to draw as a flow, so this is the matrix` : 'which active change touches which capability'}</span></h2>${impactL && !impactL.tooMany ? `<div class="row" style="gap:4px" role="group" aria-label="Impact view">${ivBtn('flow', 'Flow')}${ivBtn('matrix', 'Matrix')}</div>` : ''}</div>`;
   const impact = iv === 'flow' ? `<div class="dia dia-impact">${svgImpact(impactL)}</div>` : matrix;
-  // next open tasks
-  const nextUp = inProg.map(ch => { const open = ch.tasks.sections.flatMap(s => s.items.filter(i => !i.done && i.depth === 0).map(i => ({ ...i, sec: s.title }))).slice(0, 3); return open.length ? `<div class="nx"><div class="t"><a href="${link('changes', ch.key, 'tasks')}">${esc(ch.name)}</a><span class="small muted num">${ch.tasks.total - ch.tasks.done} open</span></div><ul>${open.map(i => `<li><span class="cb"></span><span><span class="muted num">${esc(i.id)}</span> ${inline(i.text)}</span></li>`).join('')}</ul></div>` : ''; }).join('');
   // attention
   const nWarn = m.issues.filter(i => i.lvl === 'warn').length, nInfo = m.issues.filter(i => i.lvl === 'info').length;
   const issues = m.issues.length ? `${m.issues.slice(0, 40).map(i => `<div class="issue"><span class="ic ${i.lvl === 'info' ? 'info' : ''}">${i.lvl === 'info' ? 'i' : '!'}</span><span>${i.text} <a href="${esc(i.href)}" class="small">open</a></span></div>`).join('')}${m.issues.length > 40 ? `<div class="small muted" style="padding-top:8px">${m.issues.length - 40} more not shown</div>` : ''}` : '<div class="empty">Deltas match the current specs, every requirement has scenarios, and no change is stuck.</div>';
@@ -1548,10 +1538,8 @@ function renderOverview() {
     <div class="dia dia-lifecycle" data-live>${svgLifecycle(layoutLifecycle(m), { active: sf })}</div>
     <h2>${sf === 'archived' ? 'Archived changes' : 'Active changes'} <span class="hn">${sf ? `showing ${esc(STATUS[sf])} only<button class="small" id="stageclear">show all</button>` : 'grouped by state'}</span></h2>
     ${sf ? (pool.some(c => c.status === sf) ? ledger : `<div class="empty">No change is at the ${esc(STATUS[sf])} stage.</div>`) : m.active.length ? ledger : '<div class="empty">No active changes. Everything is archived, or nothing has been proposed yet.</div>'}
-    <div class="two">
-      ${nextUp ? `<div><h2>Next open tasks <span class="hn">first three per change in progress</span></h2>${nextUp}</div>` : ''}
-      <div><h2>Needs attention <span class="hn">${m.issues.length ? `${nWarn} warnings, ${nInfo} notes` : 'nothing flagged'}</span></h2>${issues}</div>
-    </div>
+    <h2>Needs attention <span class="hn">${m.issues.length ? `${nWarn} warnings, ${nInfo} notes` : 'nothing flagged'}</span></h2>
+    ${issues}
     ${impactHead}
     ${impact}
     <h2>Capabilities <span class="hn">${plural(m.specs.length, 'spec')}${m.ghostCaps.length ? `, ${m.ghostCaps.length} proposed` : ''}</span></h2>

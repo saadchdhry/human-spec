@@ -1206,6 +1206,22 @@ function pickRoot(paths) {
   if (paths.some(p => /^(specs|changes)\//.test(p))) return '';
   return null;
 }
+function openspecVersionFrom(text) {
+  let pkg;
+  try { pkg = JSON.parse(text); } catch { return null; }
+  if (!pkg || typeof pkg !== 'object') return null;
+  const clean = v => typeof v === 'string' && v.trim().replace(/^[\^~>=<]+\s*/, '').split(/\s/)[0] || null;
+  if (pkg.name === '@fission-ai/openspec' && clean(pkg.version)) return { version: clean(pkg.version), kind: 'self' };
+  const dep = clean(pkg.dependencies?.['@fission-ai/openspec']) || clean(pkg.devDependencies?.['@fission-ai/openspec']);
+  return dep ? { version: dep, kind: 'dependency' } : null;
+}
+const openspecInfo = text => { const v = text == null ? null : openspecVersionFrom(text); return v ? { ...v, from: 'package.json' } : { version: null, kind: null, from: null }; };
+// package.json one level above the openspec folder; '' (the openspec folder itself) has no reachable parent
+const parentOf = root => root ? root.replace(/[^/]+\/$/, '') : null;
+async function readLocalOpenspec(dir) {
+  if (!dir) return openspecInfo(null);
+  try { return openspecInfo(await (await (await dir.getFileHandle('package.json')).getFile()).text()); } catch { return openspecInfo(null); }
+}
 async function findOpenspecHandle(root) {
   // breadth-first search for a directory named openspec (max depth 4), else root itself if it looks like one
   const q = [{ h: root, depth: 0, path: '' }];
@@ -1214,8 +1230,8 @@ async function findOpenspecHandle(root) {
     const { h, depth, path } = q.shift();
     const entries = await names(h);
     const hit = entries.find(([n, c]) => n === 'openspec' && c.kind === 'directory');
-    if (hit) return { handle: hit[1], path: (path ? path + '/' : '') + 'openspec' };
-    if (depth === 0 && entries.some(([n, c]) => n === 'specs' && c.kind === 'directory') && entries.some(([n, c]) => n === 'changes' && c.kind === 'directory')) return { handle: h, path: '' };
+    if (hit) return { handle: hit[1], path: (path ? path + '/' : '') + 'openspec', parent: h };
+    if (depth === 0 && entries.some(([n, c]) => n === 'specs' && c.kind === 'directory') && entries.some(([n, c]) => n === 'changes' && c.kind === 'directory')) return { handle: h, path: '', parent: null };
     if (depth < 4) for (const [n, c] of entries) if (c.kind === 'directory' && !SKIP_DIRS.has(n) && !n.startsWith('.')) q.push({ h: c, depth: depth + 1, path: (path ? path + '/' : '') + n });
   }
   return null;
@@ -1251,10 +1267,11 @@ async function loadFromDirectoryHandle(rootHandle, { remember = true } = {}) {
   const found = await findOpenspecHandle(rootHandle);
   if (!found) throw new Error(`No openspec/ folder found inside “${rootHandle.name}” (searched 4 levels deep). Point at the repository root or at the openspec folder itself.`);
   const { files, sig } = await readHandleFiles(found.handle);
+  const openspec = await readLocalOpenspec(found.parent);
   if (remember) {
     try { await idb.put({ id: 'local:' + rootHandle.name, name: rootHandle.name, handle: rootHandle, lastOpened: Date.now() }); localStorage.setItem('osv.last', JSON.stringify({ type: 'local', id: 'local:' + rootHandle.name })); } catch (e) { console.warn('could not persist handle', e); }
   }
-  return { source: { type: 'local', label: rootHandle.name + (found.path ? '/' + found.path : ''), handle: rootHandle, osHandle: found.handle, sig }, files };
+  return { source: { type: 'local', label: rootHandle.name + (found.path ? '/' + found.path : ''), handle: rootHandle, osHandle: found.handle, pkgDir: found.parent, openspec, sig }, files };
 }
 function filesFromFileList(list) {
   // <input webkitdirectory> or drag-drop entries: File objects with a relative path
@@ -1266,13 +1283,14 @@ function filesFromFileList(list) {
   for (const i of items) if (sameTop) i.path = i.path.slice(top.length + 1);
   const root = pickRoot(items.map(i => i.path));
   if (root === null) throw new Error(`No openspec/ folder found in “${top}”.`);
-  return { label: top + (root ? '/' + root.replace(/\/$/, '') : ''), items: items.filter(i => i.path.startsWith(root) && !i.path.split('/').some(seg => SKIP_DIRS.has(seg) || (seg.startsWith('.') && seg !== '.openspec.yaml')) && (TEXT_EXT.test(i.path) || i.path.endsWith('.openspec.yaml'))).map(i => ({ ...i, path: i.path.slice(root.length) })) };
+  const pkgPath = parentOf(root) === null ? null : parentOf(root) + 'package.json';
+  return { label: top + (root ? '/' + root.replace(/\/$/, '') : ''), pkg: items.find(i => i.path === pkgPath), items: items.filter(i => i.path.startsWith(root) && !i.path.split('/').some(seg => SKIP_DIRS.has(seg) || (seg.startsWith('.') && seg !== '.openspec.yaml')) && (TEXT_EXT.test(i.path) || i.path.endsWith('.openspec.yaml'))).map(i => ({ ...i, path: i.path.slice(root.length) })) };
 }
 async function loadFromFileList(list) {
-  const { label, items } = filesFromFileList(list);
+  const { label, items, pkg } = filesFromFileList(list);
   const files = [];
   for (const i of items) files.push({ path: i.path, text: await i.file.text(), mtime: i.file.lastModified, size: i.file.size });
-  return { source: { type: 'files', label }, files };
+  return { source: { type: 'files', label, openspec: openspecInfo(pkg ? await pkg.file.text() : null) }, files };
 }
 async function readDropEntries(items) {
   const out = [];
@@ -1364,12 +1382,15 @@ async function loadFromGithub(spec, token, prev) {
     }
   };
   await Promise.all(Array.from({ length: 8 }, worker));
+  const pkgPath = parentOf(root) === null ? null : parentOf(root) + 'package.json';
+  let pkgText = null;
+  if (paths.includes(pkgPath)) { const r = await fetch(urlFor(pkgPath), { headers }); if (r.ok) pkgText = await r.text(); }
   const label = `${repo.owner}/${repo.repo}@${ref}${root ? '/' + root.replace(/\/$/, '') : ''}`;
   const recents = JSON.parse(localStorage.getItem('osv.gh') || '[]').filter(r => r.spec !== `${repo.owner}/${repo.repo}${repo.ref ? '@' + repo.ref : ''}${repo.sub ? '/' + repo.sub : ''}`);
   recents.unshift({ spec: `${repo.owner}/${repo.repo}${repo.ref ? '@' + repo.ref : ''}${repo.sub ? '/' + repo.sub : ''}`, label, t: Date.now() });
   localStorage.setItem('osv.gh', JSON.stringify(recents.slice(0, 8)));
   localStorage.setItem('osv.last', JSON.stringify({ type: 'github', spec: recents[0].spec }));
-  return { source: { type: 'github', label, repo: { ...repo, ref }, token, treeSha: tree.sha, truncated: tree.truncated, url: `https://github.com/${repo.owner}/${repo.repo}/tree/${ref}/${root}` }, files };
+  return { source: { type: 'github', label, repo: { ...repo, ref }, token, treeSha: tree.sha, truncated: tree.truncated, openspec: openspecInfo(pkgText), url: `https://github.com/${repo.owner}/${repo.repo}/tree/${ref}/${root}` }, files };
 }
 // a script tag rather than fetch, because fetch of a local file fails over file://
 let samplePromise = null;
@@ -1386,7 +1407,7 @@ function loadSampleScript() {
 async function loadSample() {
   const smp = await loadSampleScript();
   localStorage.setItem('osv.last', JSON.stringify({ type: 'sample' }));
-  return { source: { type: 'sample', label: smp.label, url: `https://github.com/${smp.source.repo}/tree/${smp.source.commit}/openspec` }, files: smp.files };
+  return { source: { type: 'sample', label: smp.label, openspec: smp.source.openspec ? { ...smp.source.openspec, from: 'package.json' } : openspecInfo(null), url: `https://github.com/${smp.source.repo}/tree/${smp.source.commit}/openspec` }, files: smp.files };
 }
 
 // ---------- loading orchestration ----------
@@ -1415,14 +1436,15 @@ async function checkLocal() {
   if (state.status === 'busy') return;
   try {
     const { files, sig } = await readHandleFiles(state.source.osHandle);
-    if (sig !== state.source.sig) { state.source.sig = sig; applyLoad({ source: state.source, files }); }
+    const openspec = await readLocalOpenspec(state.source.pkgDir);
+    if (sig !== state.source.sig || openspec.version !== state.source.openspec.version || openspec.kind !== state.source.openspec.kind) { state.source.sig = sig; state.source.openspec = openspec; applyLoad({ source: state.source, files }); }
   } catch (e) { console.warn('refresh failed', e); state.error = 'Lost access to the folder: ' + e.message; setStatus('error'); render(); }
 }
 async function refreshNow() {
   if (!state.source) return;
   if (state.source.type === 'local') {
     setStatus('busy', 'rereading…');
-    try { const { files, sig } = await readHandleFiles(state.source.osHandle); state.source.sig = sig; applyLoad({ source: state.source, files }); }
+    try { const { files, sig } = await readHandleFiles(state.source.osHandle); state.source.sig = sig; state.source.openspec = await readLocalOpenspec(state.source.pkgDir); applyLoad({ source: state.source, files }); }
     catch (e) { console.warn('refresh failed', e); state.error = 'Lost access to the folder: ' + e.message; setStatus('error'); render(); }
   }
   else if (state.source.type === 'github') runLoad(() => loadFromGithub(state.source.repo, state.source.token));
@@ -1770,7 +1792,7 @@ function renderOverview() {
   const tl = [...m.archived].sort((a, b) => (b.archivedDate || '').localeCompare(a.archivedDate || ''));
   const timeline = tl.length ? `<div class="tl">${tl.map(ch => `<div class="d">${esc(ch.archivedDate || '')}</div><div class="e"><a href="${link('changes', ch.key)}">${esc(ch.name)}</a>${ch.tasks ? `<span class="small muted num">${ch.tasks.total} tasks</span>` : ''}${ch.deltas.map(d => `<span class="tag">${esc(d.capability)} ${deltaBadges(d)}</span>`).join('')}</div>`).join('')}</div>` : '<div class="empty">Nothing archived yet.</div>';
   return `
-    ${pageHead(esc(state.source.label), [`<span class="num">${m.fileCount} files</span>`, state.loadedAt && `read ${ago(state.loadedAt)}`, state.source.truncated && '<span class="notice" style="margin:0;padding:2px 8px">GitHub truncated the file listing; some files may be missing.</span>'], cells)}
+    ${pageHead(esc(state.source.label), [`<span class="num">${m.fileCount} files</span>`, state.source.openspec?.version && `OpenSpec ${esc(state.source.openspec.version)}`, state.loadedAt && `read ${ago(state.loadedAt)}`, state.source.truncated && '<span class="notice" style="margin:0;padding:2px 8px">GitHub truncated the file listing; some files may be missing.</span>'], cells)}
     <h2>Flow <span class="hn">where each active change stands</span></h2>
     <div class="dia dia-lifecycle" data-live>${svgLifecycle(layoutLifecycle(m), { active: sf })}</div>
     <h2>${sf === 'archived' ? 'Archived changes' : 'Active changes'} <span class="c num">${sf ? pool.filter(c => c.status === sf).length : m.active.length}</span><span class="hn">${sf ? `showing ${esc(STATUS[sf])} only<button class="small" id="stageclear">show all</button>` : 'grouped by state'}</span></h2>
@@ -1925,7 +1947,10 @@ function renderProject() {
   const p = state.model.project; const c = p.config;
   const cfgKeys = Object.keys(c).filter(k => k !== '_raw' && k !== 'context');
   const cells = [[state.model.fileCount, 'files'], [p.looseChangeFiles.length, 'loose files under changes/'], [p.otherTop.length, 'other top-level files']];
-  return `${pageHead('Project', [esc(state.source.label), c.schema && `schema ${esc(String(c.schema))}`], cells)}
+  const os = state.source.openspec || {};
+  const osNote = os.version ? (os.kind === 'self' ? 'OpenSpec version: this repository is OpenSpec itself, from its own package.json.' : 'OpenSpec version from package.json next to openspec/.') : 'OpenSpec version not found: no package.json next to the openspec/ folder, or the folder was opened on its own.';
+  return `${pageHead('Project', [esc(state.source.label), os.version && `OpenSpec ${esc(os.version)}`, c.schema && `schema ${esc(String(c.schema))}`], cells)}
+    <div class="small muted">${osNote}</div>
     ${c._raw ? `<h2>config.yaml</h2>${cfgKeys.length ? `<div class="row" style="margin-bottom:12px">${cfgKeys.map(k => `<span class="tag"><b>${esc(k)}</b> ${esc(String(c[k]).split('\n')[0].slice(0, 60))}${String(c[k]).includes('\n') ? '…' : ''}</span>`).join('')}</div>` : ''}${c.context ? `<h3>Context</h3><pre>${esc(c.context)}</pre>` : ''}<details data-key="cfg:raw" ${state.open.has('cfg:raw') ? 'open' : ''}><summary class="small muted" style="cursor:pointer">Raw file</summary><pre>${esc(c._raw)}</pre></details>` : ''}
     ${p.md ? `<h2>project.md</h2><div class="md">${md(p.md)}</div>` : ''}
     ${p.agents ? `<h2>AGENTS.md</h2><div class="md">${md(p.agents)}</div>` : ''}
@@ -1951,7 +1976,7 @@ function renderHelp() {
   parseHash();
   render();
   // programmatic loading hook (used for testing and for embedding): OSV.loadFiles([{path, text, mtime}], 'label')
-  window.OSV = { loadFiles: (files, label = 'in-memory') => applyLoad({ source: { type: 'files', label }, files }), state, parseSpec, parseDelta, parseTasks, buildModel, md, layoutLifecycle, layoutImpact, layoutLineage, layoutRelations };
+  window.OSV = { loadFiles: (files, label = 'in-memory') => applyLoad({ source: { type: 'files', label }, files }), state, parseSpec, parseDelta, parseTasks, buildModel, openspecVersionFrom, md, layoutLifecycle, layoutImpact, layoutLineage, layoutRelations };
   // whole-page drop target
   document.body.addEventListener('dragover', e => { if (e.dataTransfer.types.includes('Files')) e.preventDefault(); });
   document.body.addEventListener('drop', async e => {

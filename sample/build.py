@@ -26,7 +26,24 @@ def commit_times(clone):
     return times
 
 
+def openspec_version(clone):
+    # same rule as openspecVersionFrom in index.html, applied to package.json at the pinned commit
+    try:
+        pkg = json.loads(subprocess.run(['git', '-C', clone, 'show', COMMIT + ':package.json'], check=True, capture_output=True, text=True).stdout)
+    except (subprocess.CalledProcessError, json.JSONDecodeError):
+        return None
+    clean = lambda v: (v.strip().lstrip('^~>=<').strip().split() or [None])[0] if isinstance(v, str) else None
+    if pkg.get('name') == '@fission-ai/openspec' and clean(pkg.get('version')):
+        return {'version': clean(pkg['version']), 'kind': 'self'}
+    for key in ('dependencies', 'devDependencies'):
+        v = clean((pkg.get(key) or {}).get('@fission-ai/openspec'))
+        if v:
+            return {'version': v, 'kind': 'dependency'}
+    return None
+
+
 times = commit_times(clone) if clone else {}
+openspec = openspec_version(clone) if clone else None
 files = []
 for dirpath, dirnames, filenames in os.walk(root):
     dirnames.sort()
@@ -38,7 +55,7 @@ for dirpath, dirnames, filenames in os.walk(root):
         mtime = times.get(path) or int(os.path.getmtime(full) * 1000)
         files.append({'path': path, 'text': text, 'mtime': mtime, 'size': os.path.getsize(full)})
 
-payload = {'label': 'Sample: OpenSpec', 'source': {'repo': REPO, 'commit': COMMIT, 'date': DATE}, 'files': files}
+payload = {'label': 'Sample: OpenSpec', 'source': {'repo': REPO, 'commit': COMMIT, 'date': DATE, 'openspec': openspec}, 'files': files}
 with open(os.path.join(here, 'sample.js'), 'w', encoding='utf-8') as f:
     f.write('window.OSV_SAMPLE = ' + json.dumps(payload, ensure_ascii=False) + ';\n')
-print(f'{len(files)} files, {sum(1 for p in files if p["path"] in times)} with commit times, sample.js {os.path.getsize(os.path.join(here, "sample.js")):,} bytes')
+print(f'{len(files)} files, OpenSpec {openspec["version"] + " (" + openspec["kind"] + ")" if openspec else "version not found"}, {sum(1 for p in files if p["path"] in times)} with commit times, sample.js {os.path.getsize(os.path.join(here, "sample.js")):,} bytes')

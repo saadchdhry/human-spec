@@ -14,6 +14,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,75..100,400..700;1,100,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..600;1,8..60,400&display=swap">
+<link rel="stylesheet" href="icons/icons.css">
 <style>
 :root{
   color-scheme: light;
@@ -27,6 +28,11 @@
   --serious:#ec835a; --serious-ink:#8a3a1a; --serious-soft:#fde3d8;
   --crit:#d03b3b; --crit-ink:#8e2323; --crit-soft:#f8dcdc;
   --violet:#6250d6; --violet-ink:#4a3cb0; --violet-soft:#e3dff8;
+  /* the one place the four requirement-change operations get their colours */
+  --op-added:var(--good); --op-added-ink:var(--good-ink); --op-added-soft:var(--good-soft);
+  --op-modified:var(--warn); --op-modified-ink:var(--warn-ink); --op-modified-soft:var(--warn-soft);
+  --op-removed:var(--crit); --op-removed-ink:var(--crit-ink); --op-removed-soft:var(--crit-soft);
+  --op-renamed:var(--violet); --op-renamed-ink:var(--violet-ink); --op-renamed-soft:var(--violet-soft);
   --sans:"Archivo","Helvetica Neue",Arial,sans-serif;
   --serif:"Source Serif 4","Iowan Old Style","Palatino Linotype",Georgia,serif;
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
@@ -176,10 +182,10 @@ h3{font-size:14.5px;margin:18px 0 8px;font-weight:600}
 .pill.draft .dot{background:var(--warn)}
 .pill.untouched .dot{background:transparent;border:1.5px solid var(--muted)}
 .badge{display:inline-block;font-size:11px;line-height:1.6;font-weight:600;font-stretch:92%;padding:0 6px;border-radius:2px;vertical-align:middle;white-space:nowrap;text-decoration:none}
-.badge.add{background:var(--good-soft);color:var(--good-ink)}
-.badge.mod{background:var(--warn-soft);color:var(--warn-ink)}
-.badge.rem{background:var(--crit-soft);color:var(--crit-ink)}
-.badge.ren{background:var(--violet-soft);color:var(--violet-ink)}
+.badge.add{background:var(--op-added-soft);color:var(--op-added-ink)}
+.badge.mod{background:var(--op-modified-soft);color:var(--op-modified-ink)}
+.badge.rem{background:var(--op-removed-soft);color:var(--op-removed-ink)}
+.badge.ren{background:var(--op-renamed-soft);color:var(--op-renamed-ink)}
 .badge.new{background:var(--accent-soft);color:var(--accent-ink)}
 .badge.gray{background:var(--well);color:var(--ink-2)}
 .tag{display:inline-flex;align-items:center;gap:4px;font-size:12px;line-height:1.5;padding:1px 7px;border-radius:2px;background:var(--sheet);color:var(--ink-2);text-decoration:none;border:1px solid var(--rule);white-space:nowrap}
@@ -236,11 +242,19 @@ a.tag:hover{border-color:var(--ink-2);color:var(--ink)}
 .capentry.ghost .n{color:var(--ink-2)}
 
 /* vocabulary */
+.ico{display:inline-block;width:1em;height:1em;vertical-align:-0.15em;background-color:currentColor;-webkit-mask:var(--ico) center/contain no-repeat;mask:var(--ico) center/contain no-repeat}
+.ico.added{color:var(--op-added)}
+.ico.modified{color:var(--op-modified)}
+.ico.removed{color:var(--op-removed)}
+.ico.renamed{color:var(--op-renamed)}
 .vocab{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:0 36px}
 .vocab .term{padding:12px 0;border-bottom:1px solid var(--hair)}
 .vocab .t{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
 .vocab .n{flex:1 1 auto;min-width:0}
 .vocab .n{font-weight:600;font-size:14.5px}
+.vocab .n>.ico{font-size:18px;color:var(--ink-2);margin-right:7px;vertical-align:-0.2em}
+.vocab .ops{display:flex;flex-wrap:wrap;gap:4px 14px;margin:6px 0 0;font-size:12.5px;color:var(--ink-2)}
+.vocab .ops .ico{font-size:16px;margin-right:5px}
 .vocab .w{display:block;font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:2px;font-weight:400;word-break:break-all}
 .vocab .p{font-family:var(--serif);font-size:14px;line-height:1.5;color:var(--ink-2);margin:3px 0 0;max-width:56ch}
 .vocab .c{font-size:12.5px;color:var(--ink-2);white-space:nowrap;text-decoration:none}
@@ -282,9 +296,9 @@ details.req[open]>summary::before,.req.open>.rh::before{transform:rotate(45deg)}
 .req>.rb{padding:2px 0 18px 30px;font-family:var(--serif);font-size:15px;line-height:1.55;max-width:78ch}
 .req>.rb .row,.req>.rb .notice,.req>.rb .badge{font-family:var(--sans);font-size:13px}
 .req>.rb .notice{font-size:13px}
-.req.pending{border-left:2px dashed var(--good)}
+.req.pending{border-left:2px dashed var(--op-added)}
 .req.pending>summary,.req.pending>.rh{padding-left:4px}
-.req.removed>summary .rn,.req.removed>.rh .rn{text-decoration:line-through;text-decoration-color:var(--crit);color:var(--ink-2)}
+.req.removed>summary .rn,.req.removed>.rh .rn{text-decoration:line-through;text-decoration-color:var(--op-removed);color:var(--ink-2)}
 .req>.dia-lineage{margin:0 0 12px 30px}
 .scn{margin:12px 0 0;padding:6px 0 6px 14px;border-left:2px solid var(--accent-soft)}
 .scn .st{font-family:var(--sans);font-weight:600;font-size:13px;color:var(--ink-2);margin-bottom:4px}
@@ -403,10 +417,10 @@ kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--rule);border-b
 .dia .node .cnt{font-size:11.5px;fill:var(--muted)}
 .dia .node .new{font-size:11px;font-weight:600;fill:var(--accent-ink)}
 .dia .band{fill-opacity:.9;stroke-opacity:.45;stroke-width:1}
-.dia .band.k-add{fill:var(--good-soft);stroke:var(--good)}
-.dia .band.k-mod{fill:var(--warn-soft);stroke:var(--warn)}
-.dia .band.k-rem{fill:var(--crit-soft);stroke:var(--crit)}
-.dia .band.k-ren{fill:var(--violet-soft);stroke:var(--violet)}
+.dia .band.k-add{fill:var(--op-added-soft);stroke:var(--op-added)}
+.dia .band.k-mod{fill:var(--op-modified-soft);stroke:var(--op-modified)}
+.dia .band.k-rem{fill:var(--op-removed-soft);stroke:var(--op-removed)}
+.dia .band.k-ren{fill:var(--op-renamed-soft);stroke:var(--op-renamed)}
 .dia .band.k-none{fill:var(--well);stroke:var(--rule)}
 .dia .node,.dia .band{transition:opacity .12s}
 .dia svg.focus .band:not(.on),.dia svg.focus .node:not(.on){opacity:.12}
@@ -418,10 +432,10 @@ kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--rule);border-b
 .dia .bl.pend{stroke-dasharray:4 3}
 .dia .mkbg{fill:var(--sheet)}
 .dia .mk{stroke-width:2}
-.dia .mk.k-add{fill:var(--good);stroke:var(--good)}
-.dia .mk.k-mod{fill:var(--sheet);stroke:var(--warn)}
-.dia .mk.k-ren{fill:var(--violet-soft);stroke:var(--violet)}
-.dia .mk.k-rem{fill:none;stroke:var(--crit);stroke-width:2.5}
+.dia .mk.k-add{fill:var(--op-added);stroke:var(--op-added)}
+.dia .mk.k-mod{fill:var(--sheet);stroke:var(--op-modified)}
+.dia .mk.k-ren{fill:var(--op-renamed-soft);stroke:var(--op-renamed)}
+.dia .mk.k-rem{fill:none;stroke:var(--op-removed);stroke-width:2.5}
 .dia .mk.pend{fill:var(--sheet);stroke-dasharray:2 2}
 .dia .ld{font-size:11.5px;fill:var(--muted)}
 .dia .lr{font-size:11.5px;fill:var(--ink-2)}
@@ -1111,8 +1125,7 @@ function layoutLineage(sp, r, cols = layoutLineageColumns(sp), step = LINEAGE_FU
   const firstPending = cols.findIndex(c => c.pending);
   return { events, width: step * cols.length, step, splitX: firstPending < 0 ? null : step * firstPending };
 }
-const lineageVerb = { add: 'added', mod: 'modified', ren: 'renamed', rem: 'removed' };
-const lineageTip = e => `${lineageVerb[e.kind]}${e.kind === 'ren' ? ` from “${e.from}” to “${e.to}”` : ''} in ${e.change}${e.pending ? ' (pending)' : ` on ${e.date}`}`;
+const lineageTip = e => `${deltaOp(e.kind).label}${e.kind === 'ren' ? ` from “${e.from}” to “${e.to}”` : ''} in ${e.change}${e.pending ? ' (pending)' : ` on ${e.date}`}`;
 function lineageMark(e, y) {
   const { x } = e, c = `mk k-${e.kind}${e.pending ? ' pend' : ''}`;
   if (e.kind === 'add') return `<circle class="${c}" cx="${x}" cy="${y}" r="5.5"/>`;
@@ -1156,12 +1169,12 @@ function svgLineageAxis(cols, step) {
   return `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" aria-label="Changes that touched this capability" xmlns="http://www.w3.org/2000/svg">${lineageBaseline(width, h - 1, fp < 0 ? null : step * fp)}${cols.map(label).join('')}</svg>`;
 }
 function renderLineageLegend() {
-  const kinds = ['add', 'mod', 'ren', 'rem'], x0 = 110, dx = 130;
+  const x0 = 110, dx = 130;
   let s = svgT(0, 21, 'Merged', 'lh', 'start') + svgT(0, 51, 'Pending', 'lh', 'start') + svgT(0, 81, 'Baseline', 'lh', 'start');
-  kinds.forEach((k, i) => {
+  DELTA_OPS.forEach(({ k, label }, i) => {
     const x = x0 + dx * i;
-    s += lineageMark({ kind: k, x }, 17) + svgT(x + 14, 21, lineageVerb[k], '', 'start');
-    s += lineageMark({ kind: k, x, pending: true }, 47) + svgT(x + 14, 51, lineageVerb[k], '', 'start');
+    s += lineageMark({ kind: k, x }, 17) + svgT(x + 14, 21, label, '', 'start');
+    s += lineageMark({ kind: k, x, pending: true }, 47) + svgT(x + 14, 51, label, '', 'start');
   });
   s += `<line class="bl" x1="${x0 - 8}" y1="77" x2="${x0 + 100}" y2="77"/>${svgT(x0 + 108, 81, 'merged', '', 'start')}<line class="bl pend" x1="${x0 + dx * 2 - 8}" y1="77" x2="${x0 + dx * 2 + 100}" y2="77"/>${svgT(x0 + dx * 2 + 108, 81, 'pending', '', 'start')}`;
   return `<h2>Legend <span class="hn">marks on the lineage timelines</span></h2><div class="dia lineage-legend"><svg viewBox="0 0 640 92" width="640" height="92" aria-label="Legend of the lineage marks" xmlns="http://www.w3.org/2000/svg">${s}</svg></div>`;
@@ -1645,7 +1658,15 @@ function closeDialog() { const d = $('#dlg'); if (d.open) d.close(); }
 const STATUS = { progress: 'In progress', untouched: 'Not started', complete: 'Complete', draft: 'Drafting', archived: 'Archived' };
 const pill = ch => `<span class="pill ${ch.status}"><span class="dot"></span>${STATUS[ch.status]}</span>`;
 const bar = (done, total, lg) => `<div class="bar ${lg ? 'lg' : ''} ${total && done === total ? 'done' : ''}"><i style="width:${pct(done, total)}%"></i></div>`;
-const deltaBadges = d => [d.added.length && `<span class="badge add" title="${d.added.length} added">+${d.added.length}</span>`, d.modified.length && `<span class="badge mod" title="${d.modified.length} modified">~${d.modified.length}</span>`, d.removed.length && `<span class="badge rem" title="${d.removed.length} removed">−${d.removed.length}</span>`, d.renamed.length && `<span class="badge ren" title="${d.renamed.length} renamed">↔${d.renamed.length}</span>`].filter(Boolean).join('');
+const DELTA_OPS = [
+  { k: 'add', key: 'added', label: 'added', glyph: '+', icon: 'added' },
+  { k: 'mod', key: 'modified', label: 'modified', glyph: '~', icon: 'modified' },
+  { k: 'rem', key: 'removed', label: 'removed', glyph: '−', icon: 'removed' },
+  { k: 'ren', key: 'renamed', label: 'renamed', glyph: '↔', icon: 'renamed' }
+];
+const deltaOp = k => DELTA_OPS.find(o => o.k === k);
+const icon = name => `<i class="ico ${name}" aria-hidden="true"></i>`;
+const deltaBadges = d => DELTA_OPS.filter(o => d[o.key].length).map(o => `<span class="badge ${o.k}" title="${d[o.key].length} ${o.label}">${o.glyph}${d[o.key].length}</span>`).join('');
 const capTag = (id, exists) => `<a class="tag" href="${exists ? link('specs', id) : link('overview')}">${esc(id)}</a>`;
 // meta line: short facts separated by thin rules
 const meta = parts => `<p class="meta">${parts.filter(Boolean).map(p => `<span>${p}</span>`).join('')}</p>`;
@@ -1668,17 +1689,17 @@ function requirementHtml(r, key, { badges = '', cls = '', extra = '', timeline =
 // ---------- overview ----------
 // the six OpenSpec terms, in the order the relationship reads: what the system is, then what changes it
 const VOCAB = [
-  { n: 'Capability', w: 'specs/<name>/spec.md', p: 'One area of behaviour the system has today. Its spec is the source of truth, and is only ever rewritten by archiving a change.', c: (m, s) => [`${plural(s.specs, 'spec')}${m.ghostCaps.length ? `, ${m.ghostCaps.length} proposed` : ''}`, link('specs')] },
-  { n: 'Requirement', w: '### Requirement:', p: 'One thing a capability SHALL do. A spec is a list of requirements, and spec deltas change specs at this level.', c: (m, s) => [plural(s.requirements, 'requirement'), link('specs')] },
-  { n: 'Scenario', w: '#### Scenario:', p: 'A concrete GIVEN, WHEN, THEN case that proves a requirement holds. Every requirement needs at least one.', c: (m, s) => [plural(s.scenarios, 'scenario'), link('specs')] },
-  { n: 'Change', w: 'changes/<name>/', p: 'A proposal to alter the system: a proposal.md saying why, an optional design.md saying how, spec deltas saying what, and a tasks.md listing the work. Active while under changes/, archived once moved to changes/archive/.', c: (m, s) => [`${s.active} active, ${s.archived} archived`, link('changes')] },
-  { n: 'Spec delta', w: 'changes/<name>/specs/<capability>/spec.md', p: 'One file per capability a change touches, listing the requirement changes it makes there: the requirements it ADDS, MODIFIES, REMOVES or RENAMES. A change’s deltas are exactly the capabilities it touches. Archiving merges each delta into its capability’s spec.', c: (m, s) => [`${s.deltaFiles} pending in ${plural(m.active.filter(c => c.deltas.length).length, 'change')}`, link('changes')] },
-  { n: 'Task', w: 'changes/<name>/tasks.md', p: 'A checklist item: the implementation work that makes a change’s deltas true. Ticking tasks moves a change from Not started through In progress to Complete.', c: (m, s) => [`${s.tasksDone} of ${s.tasksTotal} done`, link('changes')] }
+  { n: 'Capability', icon: 'capability', w: 'specs/<name>/spec.md', p: 'One area of behaviour the system has today. Its spec is the source of truth, and is only ever rewritten by archiving a change.', c: (m, s) => [`${plural(s.specs, 'spec')}${m.ghostCaps.length ? `, ${m.ghostCaps.length} proposed` : ''}`, link('specs')] },
+  { n: 'Requirement', icon: 'requirement', w: '### Requirement:', p: 'One thing a capability SHALL do. A spec is a list of requirements, and spec deltas change specs at this level.', c: (m, s) => [plural(s.requirements, 'requirement'), link('specs')] },
+  { n: 'Scenario', icon: 'scenario', w: '#### Scenario:', p: 'A concrete GIVEN, WHEN, THEN case that proves a requirement holds. Every requirement needs at least one.', c: (m, s) => [plural(s.scenarios, 'scenario'), link('specs')] },
+  { n: 'Change', icon: 'change', w: 'changes/<name>/', p: 'A proposal to alter the system: a proposal.md saying why, an optional design.md saying how, spec deltas saying what, and a tasks.md listing the work. Active while under changes/, archived once moved to changes/archive/.', c: (m, s) => [`${s.active} active, ${s.archived} archived`, link('changes')] },
+  { n: 'Spec delta', icon: 'spec-delta', w: 'changes/<name>/specs/<capability>/spec.md', p: 'One file per capability a change touches, listing the requirement changes it makes there: the requirements it ADDS, MODIFIES, REMOVES or RENAMES. A change’s deltas are exactly the capabilities it touches. Archiving merges each delta into its capability’s spec.', c: (m, s) => [`${s.deltaFiles} pending in ${plural(m.active.filter(c => c.deltas.length).length, 'change')}`, link('changes')] },
+  { n: 'Task', icon: 'task', w: 'changes/<name>/tasks.md', p: 'A checklist item: the implementation work that makes a change’s deltas true. Ticking tasks moves a change from Not started through In progress to Complete.', c: (m, s) => [`${s.tasksDone} of ${s.tasksTotal} done`, link('changes')] }
 ];
 function renderVocab(m) {
   const s = m?.stats;
   return `<p class="chain">A <b>change</b> proposes <b>spec deltas</b> against <b>capabilities</b>. Each delta is a list of requirement changes: the <b>requirements</b> it adds, modifies, removes or renames, and every requirement is proven by <b>scenarios</b>. <b>Tasks</b> are the work that makes the deltas true; archiving the change merges its deltas into the specs.</p>
-    <div class="vocab">${VOCAB.map(t => { const [count, href] = m ? t.c(m, s) : []; return `<div class="term"><div class="t"><span class="n">${esc(t.n)}<span class="w">${esc(t.w)}</span></span>${m ? `<a class="c num" href="${href}">${esc(count)}</a>` : ''}</div><p class="p">${t.p}</p></div>`; }).join('')}</div>`;
+    <div class="vocab">${VOCAB.map(t => { const [count, href] = m ? t.c(m, s) : []; return `<div class="term"><div class="t"><span class="n">${icon(t.icon)}${esc(t.n)}<span class="w">${esc(t.w)}</span></span>${m ? `<a class="c num" href="${href}">${esc(count)}</a>` : ''}</div><p class="p">${t.p}</p>${t.icon === 'spec-delta' ? `<p class="ops">${DELTA_OPS.map(o => `<span>${icon(o.icon)}${o.label}</span>`).join('')}</p>` : ''}</div>`; }).join('')}</div>`;
 }
 function renderOverview() {
   const m = state.model, s = m.stats;
@@ -1864,7 +1885,7 @@ function renderDeltas(ch) {
       return requirementHtml(r, `d:${ch.key}:${d.capability}:${kind}:${r.name}`, { badges, extra, cls: kind === 'removed' ? 'removed' : '' });
     }).join('');
     const ren = d.renamed.length ? `<div class="renames">${d.renamed.map(r => `<div class="row"><span class="badge ren">renamed</span><span>${esc(r.from)}</span><span class="muted">→</span><b>${esc(r.to)}</b>${!sp?.requirements.some(x => norm(x.name) === norm(r.from)) ? `<span class="badge gray" title="No requirement with the old name exists in the current spec">not in spec</span>` : ''}</div>`).join('')}</div>` : '';
-    const blocks = `${block(d.added, 'added', 'added', 'add')}${block(d.modified, 'modified', 'modified', 'mod')}${block(d.removed, 'removed', 'removed', 'rem')}`;
+    const blocks = DELTA_OPS.filter(o => o.key !== 'renamed').map(o => block(d[o.key], o.key, o.label, o.k)).join('');
     return `<section style="margin-bottom:28px"><div class="h2row"><h2>${sp ? `<a href="${link('specs', d.capability)}" style="color:inherit;text-decoration:none">${esc(d.capability)}</a>` : `${esc(d.capability)} <span class="badge new">new capability</span>`} <span class="row" style="gap:3px">${deltaBadges(d)}</span></h2><div class="row"><button class="small" data-expand="1">Expand all</button><button class="small" data-expand="0">Collapse all</button></div></div>
       <div class="small muted row" style="gap:10px;margin-bottom:12px"><code>specs/${esc(d.capability)}/spec.md</code><span>${plural(d.count, 'requirement change')}</span>${sp ? `<a href="${link('specs', d.capability)}">${ch.archived ? 'current spec, which includes this delta' : 'current spec'}</a>` : '<span>new capability: this delta creates its spec</span>'}</div>
       ${d.purpose ? `<div class="md" style="margin-bottom:12px">${md(d.purpose)}</div>` : ''}

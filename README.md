@@ -7,7 +7,7 @@ Human-specs gives you a birds eye view to follow along.
 p.s. I do recommend against trying to read openspec. Let agents do their thing.
 
 ## What is human-spec
-An OpenSpec viewer. One HTML file, no build step, no dependencies. Point it at any repository that holds an `openspec/` folder and it shows the capabilities and their requirements, the changes in flight and in the archive, the spec deltas each change proposes, and how far its tasks have come.
+An OpenSpec viewer. A static page with no build step, no server and no dependencies: `index.html` plus a folder of icons. Point it at any repository that holds an `openspec/` folder and it shows the capabilities and their requirements, the changes in flight and in the archive, the spec deltas each change proposes, and how far its tasks have come.
 
 OpenSpec is text first, which suits agents and tires humans. human-spec is the human side: a read-only dashboard for keeping an eye on the state of the specs and the progress of the work.
 
@@ -43,7 +43,13 @@ OpenSpec work moves through the same stages in every repository: a change is pro
 
 ## Open it
 
-**Straight from disk.** Open `index.html` in Chrome or Edge. The folder picker and live refresh work from a `file://` address.
+**Straight from disk.** Open `index.html` in Chrome or Edge. The folder picker, live refresh and the icons all work from a `file://` address, as long as the `icons/` folder sits next to the page.
+
+**Icons.** The vocabulary and operation icons are the `.svg` files in `icons/`. The page loads them through `icons/icons.css`, where each one is inlined, because a page opened from disk cannot load mask images by path. After editing or adding an icon, run:
+
+```bash
+python3 icons/build.py
+```
 
 **From a local server.** Any static server will do:
 

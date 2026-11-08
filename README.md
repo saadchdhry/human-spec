@@ -7,7 +7,7 @@ Human-specs gives you a birds eye view to follow along.
 p.s. I do recommend against trying to read openspec. Let agents do their thing.
 
 ## What is human-spec
-An OpenSpec viewer. One HTML file, no build step, no dependencies. Point it at any repository that holds an `openspec/` folder and it shows the capabilities and their requirements, the changes in flight and in the archive, the spec deltas each change proposes, and how far its tasks have come.
+An OpenSpec viewer. A static page with no build step, no server and no dependencies: `index.html` plus a folder of icons. Point it at any repository that holds an `openspec/` folder and it shows the capabilities and their requirements, the changes in flight and in the archive, the spec deltas each change proposes, and how far its tasks have come.
 
 OpenSpec is text first, which suits agents and tires humans. human-spec is the human side: a read-only dashboard for keeping an eye on the state of the specs and the progress of the work.
 
@@ -29,11 +29,11 @@ OpenSpec work moves through the same stages in every repository: a change is pro
 
 ![A change page on the tasks tab: sections of checklist items with a progress bar per section](docs/story-change.png)
 
-**4. What a change proposes.** Spec deltas list the requirements a change adds, modifies, removes or renames, capability by capability, with a word-level diff of each modified requirement against the current spec.
+**4. What a change proposes.** A change carries one spec delta per capability it touches, and each delta lists its requirement changes: the requirements it adds, modifies, removes or renames there, with a word-level diff of each modified requirement against the current spec.
 
 ![The deltas tab of a change: a modified requirement shown as a word-level diff against the current spec](docs/story-deltas.png)
 
-**5. What the changes touch.** The impact flow draws the active changes on the left and the capabilities on the right, with a band per spec delta coloured by kind. Hover a change to see only what it touches, or switch to the matrix.
+**5. What the changes touch.** The impact flow draws the active changes on the left and the capabilities on the right, with a band for each kind of requirement change in each spec delta, as wide as the number of requirement changes and coloured by kind. Hover a change to see only what it touches, or switch to the matrix.
 
 ![The impact flow with one change hovered: its bands and the capabilities it touches stay bright while the rest fade](docs/story-impact.png)
 
@@ -43,7 +43,15 @@ OpenSpec work moves through the same stages in every repository: a change is pro
 
 ## Open it
 
-**Straight from disk.** Open `index.html` in Chrome or Edge. The folder picker and live refresh work from a `file://` address.
+**Straight from disk.** Open `index.html` in Chrome or Edge. The folder picker, live refresh, the icons and the sample all work from a `file://` address, as long as the `icons/` and `sample/` folders sit next to the page.
+
+**Try it first.** The welcome page offers a Sample: the OpenSpec project's own `openspec/` folder, bundled in `sample/` under its MIT licence, so nothing has to be cloned or fetched. `sample/README.md` names the commit it was taken from and `sample/build.py` regenerates the bundle.
+
+**Icons.** The vocabulary and operation icons are the `.svg` files in `icons/`. The page loads them through `icons/icons.css`, where each one is inlined, because a page opened from disk cannot load mask images by path. After editing or adding an icon, run:
+
+```bash
+python3 icons/build.py
+```
 
 **From a local server.** Any static server will do:
 
@@ -62,10 +70,11 @@ The browser asks once per folder whether the page may "view and copy" files. Tha
 
 ## What it shows
 
-- **Overview.** A title block of counts, a flow diagram of the change lifecycle with each active change placed in its stage (click a stage to filter the ledger), a ledger of active changes grouped by state, the next open tasks per change in progress, a needs-attention list, an impact flow of change → capability with a band per spec delta (switchable to a matrix), the capabilities, and the archive history.
-- **Specs.** Each capability's purpose and requirements with their scenarios. A requirement with history opens with a lineage strip of the archived changes that added, modified or renamed it, and any pending edits. Requirements carry badges linking to the active change that modifies, removes or renames them. Proposed additions appear below.
-- **Changes.** Proposal, tasks grouped by section with progress, spec deltas with a word-level diff of each modified requirement against the current spec, design, and the file list.
-- **Project.** `project.md` and `config.yaml`.
+- **Overview.** A title block of counts, a flow diagram of the change lifecycle with each active change placed in its stage (click a stage to filter the ledger), a ledger of active changes grouped by state, a needs-attention list, an impact flow of change → capability with bands sized by requirement changes (switchable to a matrix), the capabilities, and the archive history.
+- **Specs.** Each capability's purpose and requirements with their scenarios. A requirement with history carries a lineage strip, visible while it is collapsed, of the archived changes that added, modified or renamed it, and any pending edits. The strips share one column per change that touched the capability, so the same change lines up down the list; the "Compact view" switch trades per-event labels for narrow columns with a single sticky axis row. Requirements carry badges linking to the active change that modifies, removes or renames them. Proposed additions appear below.
+- **Changes.** Tabs in the order the workflow writes them: proposal, design, spec deltas with a word-level diff of each modified requirement against the current spec, tasks grouped by section with progress, and the file list.
+- **Project.** `project.md` and `config.yaml`. The OpenSpec version the project uses is read from the `package.json` next to the `openspec/` folder (the `@fission-ai/openspec` dependency, or the package's own version when the repository is OpenSpec itself) and shown here and in the Overview subheading; nothing inside `openspec/` records it.
+- **Help.** A relationship flow of the six terms as nodes, with each arrow between them labelled with the relationship. Every node is always drawn, carrying the loaded repository’s counts (zero when a stage is empty). Then the lifecycle explainer showing the stages a change moves through, and a vocabulary of the six OpenSpec terms, with the repository’s live counts when one is loaded. It works before any repository is opened.
 - **Needs attention.** Deltas that modify or remove a requirement the spec no longer has, additions that collide with an existing name, requirements without scenarios, changes with tasks but no deltas, and changes whose tasks are all done but which are not archived.
 
 ## Programmatic use
@@ -90,4 +99,4 @@ MIT. See [LICENSE](LICENSE). Use it, change it, ship it, commercially or not; ke
 
 The name "human-spec" and the human-spec.dev domain are not covered by the license. Forks are welcome, but should not present themselves as the official site or project.
 
-Fonts are loaded from Google Fonts: [Archivo](https://fonts.google.com/specimen/Archivo) and [Source Serif 4](https://fonts.google.com/specimen/Source+Serif+4), both under the SIL Open Font License 1.1.
+Fonts are loaded from Google Fonts: [Archivo](https://fonts.google.com/specimen/Archivo) and [Source Sans 3](https://fonts.google.com/specimen/Source+Sans+3), both under the SIL Open Font License 1.1.

@@ -13,7 +13,8 @@
 <meta name="description" content="human-spec, an OpenSpec viewer: a standalone dashboard that reads any repository's openspec/ folder (local folder or GitHub) and visualizes capabilities, requirements, changes, spec deltas and task progress.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,75..100,400..700;1,100,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..600;1,8..60,400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,75..100,400..700;1,100,400&family=Source+Sans+3:ital,wght@0,400..600;1,400&display=swap">
+<link rel="stylesheet" href="icons/icons.css">
 <style>
 :root{
   color-scheme: light;
@@ -27,8 +28,13 @@
   --serious:#ec835a; --serious-ink:#8a3a1a; --serious-soft:#fde3d8;
   --crit:#d03b3b; --crit-ink:#8e2323; --crit-soft:#f8dcdc;
   --violet:#6250d6; --violet-ink:#4a3cb0; --violet-soft:#e3dff8;
+  /* the one place the four requirement-change operations get their colours */
+  --op-added:var(--good); --op-added-ink:var(--good-ink); --op-added-soft:var(--good-soft);
+  --op-modified:var(--warn); --op-modified-ink:var(--warn-ink); --op-modified-soft:var(--warn-soft);
+  --op-removed:var(--crit); --op-removed-ink:var(--crit-ink); --op-removed-soft:var(--crit-soft);
+  --op-renamed:var(--violet); --op-renamed-ink:var(--violet-ink); --op-renamed-soft:var(--violet-soft);
   --sans:"Archivo","Helvetica Neue",Arial,sans-serif;
-  --serif:"Source Serif 4","Iowan Old Style","Palatino Linotype",Georgia,serif;
+  --prose:"Source Sans 3","Source Sans Pro","Helvetica Neue",Arial,sans-serif;
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   --r:3px;
 }
@@ -107,7 +113,7 @@ button.ibtn:hover{background:var(--well)}
 .dot.busy{background:var(--warn);animation:pulse 1s infinite}
 .dot.err{background:var(--crit)}
 @keyframes pulse{50%{opacity:.3}}
-@media (prefers-reduced-motion:reduce){.dot.busy{animation:none}.bar i{transition:none}details.req>summary::before{transition:none}}
+@media (prefers-reduced-motion:reduce){.dot.busy{animation:none}.bar i{transition:none}.req>summary::before,.req>.rh::before{transition:none}}
 label.tgl{display:inline-flex;align-items:center;gap:5px;cursor:pointer;user-select:none}
 label.tgl input{margin:0;accent-color:var(--ink)}
 label.sw input{appearance:none;-webkit-appearance:none;width:28px;height:16px;border-radius:8px;background:var(--rule);position:relative;cursor:pointer;flex:none;transition:background .15s}
@@ -124,9 +130,12 @@ main.sheet{max-width:1440px;margin:22px auto 48px;background:var(--sheet);border
 .head .hl{min-width:0;flex:1 1 320px}
 .head h1{margin:0 0 6px}
 .head .tb{flex:0 1 auto}
+.head.stack{flex-direction:column;align-items:flex-start;gap:14px}
+.head.stack .hl{flex:none;width:100%}
 h1{font-size:26px;line-height:1.15;margin:0 0 6px;font-weight:600;font-stretch:92%;letter-spacing:-.015em;overflow-wrap:anywhere}
 h2{font-size:17px;line-height:1.3;margin:30px 0 12px;font-weight:600;letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;padding-bottom:6px;border-bottom:1px solid var(--rule)}
 h2 .hn{font-weight:400;font-size:12.5px;color:var(--muted);margin-left:auto}
+h2 .c{font-weight:400;font-size:13px;color:var(--muted);margin-left:-6px}
 h3{font-size:14.5px;margin:18px 0 8px;font-weight:600}
 .h2row{display:flex;justify-content:space-between;align-items:flex-end;gap:10px 16px;flex-wrap:wrap;border-bottom:1px solid var(--rule);margin:30px 0 12px}
 .h2row h2{border:0;margin:0}
@@ -161,8 +170,6 @@ h3{font-size:14.5px;margin:18px 0 8px;font-weight:600}
 .card{border:1px solid var(--rule);border-radius:var(--r);padding:16px 18px;background:var(--sheet)}
 .doc{border-left:2px solid var(--rule);padding:4px 0 4px 18px;margin:12px 0}
 .grid{display:grid;gap:12px}
-.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 40px}
-@media (max-width:900px){.two{grid-template-columns:1fr}}
 .bar{height:5px;background:var(--hair);border-radius:1px;overflow:hidden;position:relative}
 .bar i{display:block;height:100%;background:var(--accent);transition:width .3s}
 .bar.done i{background:var(--good)}
@@ -175,10 +182,10 @@ h3{font-size:14.5px;margin:18px 0 8px;font-weight:600}
 .pill.draft .dot{background:var(--warn)}
 .pill.untouched .dot{background:transparent;border:1.5px solid var(--muted)}
 .badge{display:inline-block;font-size:11px;line-height:1.6;font-weight:600;font-stretch:92%;padding:0 6px;border-radius:2px;vertical-align:middle;white-space:nowrap;text-decoration:none}
-.badge.add{background:var(--good-soft);color:var(--good-ink)}
-.badge.mod{background:var(--warn-soft);color:var(--warn-ink)}
-.badge.rem{background:var(--crit-soft);color:var(--crit-ink)}
-.badge.ren{background:var(--violet-soft);color:var(--violet-ink)}
+.badge.add{background:var(--op-added-soft);color:var(--op-added-ink)}
+.badge.mod{background:var(--op-modified-soft);color:var(--op-modified-ink)}
+.badge.rem{background:var(--op-removed-soft);color:var(--op-removed-ink)}
+.badge.ren{background:var(--op-renamed-soft);color:var(--op-renamed-ink)}
 .badge.new{background:var(--accent-soft);color:var(--accent-ink)}
 .badge.gray{background:var(--well);color:var(--ink-2)}
 .tag{display:inline-flex;align-items:center;gap:4px;font-size:12px;line-height:1.5;padding:1px 7px;border-radius:2px;background:var(--sheet);color:var(--ink-2);text-decoration:none;border:1px solid var(--rule);white-space:nowrap}
@@ -204,13 +211,7 @@ a.tag:hover{border-color:var(--ink-2);color:var(--ink)}
 .lrow .when{font-size:12px;color:var(--muted);white-space:nowrap;text-align:right}
 @media (max-width:820px){.lrow{grid-template-columns:minmax(0,1fr) auto}.lrow .pg{grid-column:1/-1}.lrow .caps{grid-column:1/-1}}
 
-/* next tasks + attention */
-.nx{padding:10px 0;border-bottom:1px solid var(--hair)}
-.nx .t{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
-.nx .t a{font-weight:600;text-decoration:none;color:inherit}
-.nx ul{margin:6px 0 0;padding:0;list-style:none}
-.nx li{display:flex;gap:9px;padding:3px 0;font-size:13px;color:var(--ink-2);align-items:flex-start}
-.nx li .cb{margin-top:3px}
+/* attention */
 .issue{display:grid;grid-template-columns:16px 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--hair);font-size:13px}
 .issue .ic{width:16px;height:16px;border-radius:1px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#1b2340;background:var(--warn);margin-top:2px}
 .issue .ic.info{background:var(--accent-soft);color:var(--accent-ink)}
@@ -236,9 +237,29 @@ a.tag:hover{border-color:var(--ink-2);color:var(--ink)}
 .capentry:hover .n{text-decoration:underline;text-decoration-color:var(--rule)}
 .capentry .t{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
 .capentry .n{font-weight:600;font-size:14.5px}
-.capentry .p{font-family:var(--serif);font-size:14px;line-height:1.5;color:var(--ink-2);margin:3px 0 6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.capentry .p{font-family:var(--prose);font-size:14px;line-height:1.5;color:var(--ink-2);margin:3px 0 6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .capentry .m{font-size:12px;color:var(--muted);display:flex;gap:4px 12px;flex-wrap:wrap;align-items:center}
 .capentry.ghost .n{color:var(--ink-2)}
+
+/* vocabulary */
+.ico{display:inline-block;width:1em;height:1em;vertical-align:-0.15em;background-color:currentColor;-webkit-mask:var(--ico) center/contain no-repeat;mask:var(--ico) center/contain no-repeat}
+.ico.added{color:var(--op-added)}
+.ico.modified{color:var(--op-modified)}
+.ico.removed{color:var(--op-removed)}
+.ico.renamed{color:var(--op-renamed)}
+.vocab{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:0 36px}
+.vocab .term{padding:12px 0;border-bottom:1px solid var(--hair)}
+.vocab .t{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.vocab .n{flex:1 1 auto;min-width:0}
+.vocab .n{font-weight:600;font-size:14.5px}
+.vocab .n>.ico{font-size:18px;color:var(--ink-2);margin-right:7px;vertical-align:-0.2em}
+.vocab .ops{display:flex;flex-wrap:wrap;gap:4px 14px;margin:6px 0 0;font-size:12.5px;color:var(--ink-2)}
+.vocab .ops .ico{font-size:16px;margin-right:5px}
+.vocab .w{display:block;font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:2px;font-weight:400;word-break:break-all}
+.vocab .p{font-family:var(--prose);font-size:14px;line-height:1.5;color:var(--ink-2);margin:3px 0 0;max-width:56ch}
+.vocab .c{font-size:12.5px;color:var(--ink-2);white-space:nowrap;text-decoration:none}
+.vocab .c:hover{text-decoration:underline;text-decoration-color:var(--rule)}
+.chain{font-family:var(--prose);font-size:15px;line-height:1.55;color:var(--ink-2);max-width:78ch;margin:0 0 4px}
 
 /* history ledger */
 .tl{display:grid;grid-template-columns:104px 1fr}
@@ -248,7 +269,7 @@ a.tag:hover{border-color:var(--ink-2);color:var(--ink)}
 
 /* side list */
 .split{display:grid;grid-template-columns:270px minmax(0,1fr);gap:36px;align-items:start}
-@media (max-width:900px){.split{grid-template-columns:1fr;gap:20px}.side{position:static!important;max-height:none!important;border-right:0!important;padding-right:0!important;border-bottom:1px solid var(--rule);padding-bottom:12px}}
+@media (max-width:900px){.split{grid-template-columns:minmax(0,1fr);gap:20px}.side{position:static!important;max-height:none!important;border-right:0!important;padding-right:0!important;border-bottom:1px solid var(--rule);padding-bottom:12px}}
 .side{position:sticky;top:60px;max-height:calc(100vh - 80px);overflow:auto;padding-right:18px;border-right:1px solid var(--rule)}
 .side h4{margin:16px 0 6px;font-size:12.5px;font-weight:600;color:var(--muted);display:flex;justify-content:space-between;gap:8px}
 .side h4:first-child{margin-top:4px}
@@ -264,20 +285,21 @@ a.tag:hover{border-color:var(--ink-2);color:var(--ink)}
 
 /* requirements */
 .reqs{border-top:1px solid var(--rule)}
-details.req{border-bottom:1px solid var(--hair)}
-details.req>summary{list-style:none;cursor:pointer;padding:10px 4px 10px 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-details.req>summary:hover{background:var(--well)}
-details.req>summary::-webkit-details-marker{display:none}
-details.req>summary::before{content:"";width:6px;height:6px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:rotate(-45deg);transition:transform .15s;flex:none;margin:0 6px 0 8px}
-details.req[open]>summary::before{transform:rotate(45deg)}
-details.req>summary .rn{font-weight:600;flex:1 1 auto;min-width:0}
-details.req>summary .rm{font-size:12px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
-details.req .rb{padding:2px 0 18px 30px;font-family:var(--serif);font-size:15px;line-height:1.55;max-width:78ch}
-details.req .rb .row,details.req .rb .notice,details.req .rb .badge{font-family:var(--sans);font-size:13px}
-details.req .rb .notice{font-size:13px}
-details.req.pending{border-left:2px dashed var(--good)}
-details.req.pending>summary{padding-left:4px}
-details.req.removed>summary .rn{text-decoration:line-through;text-decoration-color:var(--crit);color:var(--ink-2)}
+.req{border-bottom:1px solid var(--hair)}
+.req>summary,.req>.rh{list-style:none;cursor:pointer;padding:10px 4px 10px 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.req>summary:hover,.req>.rh:hover{background:var(--well)}
+.req>summary::-webkit-details-marker{display:none}
+.req>summary::before,.req>.rh::before{content:"";width:6px;height:6px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:rotate(-45deg);transition:transform .15s;flex:none;margin:0 6px 0 8px}
+details.req[open]>summary::before,.req.open>.rh::before{transform:rotate(45deg)}
+.req>summary .rn,.req>.rh .rn{font-weight:600;flex:1 1 auto;min-width:0}
+.req>summary .rm,.req>.rh .rm{font-size:12px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.req>.rb{padding:2px 0 18px 30px;font-family:var(--prose);font-size:15px;line-height:1.55;max-width:78ch}
+.req>.rb .row,.req>.rb .notice,.req>.rb .badge{font-family:var(--sans);font-size:13px}
+.req>.rb .notice{font-size:13px}
+.req.pending{border-left:2px dashed var(--op-added)}
+.req.pending>summary,.req.pending>.rh{padding-left:4px}
+.req.removed>summary .rn,.req.removed>.rh .rn{text-decoration:line-through;text-decoration-color:var(--op-removed);color:var(--ink-2)}
+.req>.dia-lineage{margin:0 0 12px 30px}
 .scn{margin:12px 0 0;padding:6px 0 6px 14px;border-left:2px solid var(--accent-soft)}
 .scn .st{font-family:var(--sans);font-weight:600;font-size:13px;color:var(--ink-2);margin-bottom:4px}
 .scn ul{list-style:none;padding:0;margin:0}
@@ -285,7 +307,7 @@ details.req.removed>summary .rn{text-decoration:line-through;text-decoration-col
 .kw{display:inline-block;font-family:var(--sans);font-size:11px;font-weight:700;font-stretch:88%;letter-spacing:.03em;min-width:44px;flex:none;color:var(--muted);line-height:1.7}
 .kw.WHEN,.kw.GIVEN{color:var(--accent-ink)}
 .kw.THEN{color:var(--good-ink)}
-.md{font-family:var(--serif);font-size:15px;line-height:1.6;max-width:78ch}
+.md{font-family:var(--prose);font-size:15px;line-height:1.6;max-width:78ch}
 .md>:first-child{margin-top:0}.md>:last-child{margin-bottom:0}
 .md h1,.md h2,.md h3,.md h4{font-family:var(--sans);border:0;padding:0;display:block;letter-spacing:0;font-stretch:100%}
 .md h1{font-size:19px;margin:22px 0 8px}.md h2{font-size:16px;margin:22px 0 8px}.md h3{font-size:14.5px;margin:18px 0 6px}.md h4{font-size:13.5px;margin:14px 0 6px}
@@ -314,7 +336,7 @@ details.req.removed>summary .rn{text-decoration:line-through;text-decoration-col
 .tsec li.d1{padding-left:32px}.tsec li.d2{padding-left:60px}
 
 /* diff */
-.diff{white-space:pre-wrap;font-family:var(--serif);font-size:15px;line-height:1.55;max-width:78ch}
+.diff{white-space:pre-wrap;font-family:var(--prose);font-size:15px;line-height:1.55;max-width:78ch}
 .diff del{background:var(--crit-soft);color:var(--crit-ink);text-decoration:line-through;text-decoration-color:rgba(142,35,35,.5)}
 .diff ins{background:var(--good-soft);color:var(--good-ink);text-decoration:none}
 .renames{margin:8px 0;border-top:1px solid var(--rule)}
@@ -326,18 +348,21 @@ details.req.removed>summary .rn{text-decoration:line-through;text-decoration-col
 .tabs a:hover{color:var(--ink)}
 .tabs a.on{color:var(--ink);border-color:var(--ink)}
 .tabs a .c{color:var(--muted);font-size:12px;margin-left:5px;font-variant-numeric:tabular-nums}
+.tabs a.aside{margin-left:auto;font-weight:400}
 
 /* welcome + dialog */
 .welcome{max-width:920px;margin:28px auto 0}
 .welcome h1{font-size:36px;font-stretch:88%;letter-spacing:-.02em;margin:0 0 12px}
-.welcome .lede{font-family:var(--serif);font-size:17px;line-height:1.5;color:var(--ink-2);max-width:62ch;margin:0 0 26px}
+.welcome .lede{font-family:var(--prose);font-size:17px;line-height:1.5;color:var(--ink-2);max-width:62ch;margin:0 0 26px}
 .recon{border:1px solid var(--rule);border-radius:var(--r);padding:12px 16px;margin:0 0 20px}
 .opts{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--rule)}
 @media (max-width:700px){.opts{grid-template-columns:1fr}.opt+.opt{border-left:0!important;border-top:1px solid var(--rule);padding-left:0!important}.opt{padding-right:0!important}}
 .opt{padding:22px 28px 22px 0;min-width:0}
 .opt+.opt{border-left:1px solid var(--rule);padding:22px 0 22px 28px}
 .opt h3{margin:0 0 6px;font-size:17px}
-.opt p{margin:0 0 12px;color:var(--ink-2);font-family:var(--serif);font-size:14.5px;line-height:1.5}
+.opt p{margin:0 0 12px;color:var(--ink-2);font-family:var(--prose);font-size:14.5px;line-height:1.5}
+.opt.sample{grid-column:1/-1;border-left:0;border-top:1px solid var(--rule);padding:18px 0;display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center;justify-content:space-between}
+.opt.sample p{margin:0;max-width:62ch}
 .drop{border:1.5px dashed var(--rule);border-radius:var(--r);padding:16px;text-align:center;color:var(--muted);margin-top:12px}
 .drop.over{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink)}
 dialog{border:1px solid var(--rule);border-radius:var(--r);background:var(--sheet);color:var(--ink);padding:0;max-width:760px;width:calc(100% - 32px)}
@@ -360,6 +385,8 @@ kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--rule);border-b
 .dia-lifecycle,.dia-impact{overflow-x:auto}
 .dia-lifecycle svg,.dia-impact svg{width:100%;height:auto}
 .dia-lifecycle svg{min-width:900px}
+.dia-relations{overflow-x:auto}.dia-relations svg{width:100%;height:auto;min-width:900px}
+.dia .arw.pend line{stroke-dasharray:4 3}
 .dia .box{fill:var(--well);stroke:var(--rule)}
 .dia .rule{fill:var(--muted)}
 .dia .st-progress .rule{fill:var(--accent)}
@@ -392,26 +419,37 @@ kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--rule);border-b
 .dia .node .cnt{font-size:11.5px;fill:var(--muted)}
 .dia .node .new{font-size:11px;font-weight:600;fill:var(--accent-ink)}
 .dia .band{fill-opacity:.9;stroke-opacity:.45;stroke-width:1}
-.dia .band.k-add{fill:var(--good-soft);stroke:var(--good)}
-.dia .band.k-mod{fill:var(--warn-soft);stroke:var(--warn)}
-.dia .band.k-rem{fill:var(--crit-soft);stroke:var(--crit)}
-.dia .band.k-ren{fill:var(--violet-soft);stroke:var(--violet)}
+.dia .band.k-add{fill:var(--op-added-soft);stroke:var(--op-added)}
+.dia .band.k-mod{fill:var(--op-modified-soft);stroke:var(--op-modified)}
+.dia .band.k-rem{fill:var(--op-removed-soft);stroke:var(--op-removed)}
+.dia .band.k-ren{fill:var(--op-renamed-soft);stroke:var(--op-renamed)}
 .dia .band.k-none{fill:var(--well);stroke:var(--rule)}
 .dia .node,.dia .band{transition:opacity .12s}
 .dia svg.focus .band:not(.on),.dia svg.focus .node:not(.on){opacity:.12}
 @media (prefers-reduced-motion:reduce){.dia .node,.dia .band{transition:none}}
-.dia-lineage{overflow-x:auto;margin:2px 0 14px;max-width:100%}
+.dia-lineage{overflow-x:auto;margin:2px 0 14px;max-width:100%;display:flex;scrollbar-width:none}
+.dia-lineage::-webkit-scrollbar{display:none}
+.dia-lineage svg{flex:none;margin-left:auto}
 .dia .bl{stroke:var(--rule);stroke-width:1.5}
 .dia .bl.pend{stroke-dasharray:4 3}
 .dia .mkbg{fill:var(--sheet)}
 .dia .mk{stroke-width:2}
-.dia .mk.k-add{fill:var(--good);stroke:var(--good)}
-.dia .mk.k-mod{fill:var(--sheet);stroke:var(--warn)}
-.dia .mk.k-ren{fill:var(--violet-soft);stroke:var(--violet)}
-.dia .mk.k-rem{fill:none;stroke:var(--crit);stroke-width:2.5}
+.dia .mk.k-add{fill:var(--op-added);stroke:var(--op-added)}
+.dia .mk.k-mod{fill:var(--sheet);stroke:var(--op-modified)}
+.dia .mk.k-ren{fill:var(--op-renamed-soft);stroke:var(--op-renamed)}
+.dia .mk.k-rem{fill:none;stroke:var(--op-removed);stroke-width:2.5}
 .dia .mk.pend{fill:var(--sheet);stroke-dasharray:2 2}
 .dia .ld{font-size:11.5px;fill:var(--muted)}
 .dia .lr{font-size:11.5px;fill:var(--ink-2)}
+.dia .tk{stroke:var(--rule);stroke-width:1}
+label.tgl.lineage-switch{font-size:12.5px;line-height:1.4;padding:2px 0;border:1px solid transparent}
+.lineage-axis{position:sticky;top:60px;z-index:2;background:var(--sheet);border-bottom:1px solid var(--rule)}
+.lineage-axis>.dia-lineage{margin:0 0 0 30px}
+.lineage-axis+.reqs{border-top:0}
+.reqs.lineage-compact .req>.dia-lineage{margin:0 0 8px 30px}
+.lineage-legend svg{max-width:100%;height:auto}
+.lineage-legend text{fill:var(--ink-2)}
+.lineage-legend .lh{font-size:11.5px;font-weight:600;fill:var(--muted)}
 .welcome .dia-lifecycle{margin-bottom:28px}
 </style>
 </head>
@@ -452,7 +490,7 @@ const fmtDate = ts => ts ? new Date(ts).toISOString().slice(0, 10) : '';
 
 // ---------- state ----------
 const state = {
-  source: null,      // {type:'local'|'github'|'files', label, handle?, repo?, ref?, token?, treeSha?}
+  source: null,      // {type:'local'|'github'|'files'|'sample', label, handle?, repo?, ref?, token?, treeSha?}
   files: null,       // [{path, text, mtime}] relative to the openspec folder
   model: null,
   status: 'idle',    // idle | busy | live | error
@@ -461,6 +499,7 @@ const state = {
   auto: localStorage.getItem('osv.auto') !== '0',
   open: new Set(),   // open <details> keys
   openOnly: localStorage.getItem('osv.openOnly') === '1',
+  compactLineage: localStorage.getItem('osv.compactLineage') === '1',
   deltaView: {},     // key -> 'proposed'|'current'|'diff'
   stageFilter: null, // lifecycle stage the Overview ledger is narrowed to
   impactView: 'flow', // 'flow'|'matrix' on the Overview
@@ -766,7 +805,9 @@ function buildModel(files) {
     active: active.length, archived: archived.length,
     tasksTotal: active.reduce((n, c) => n + (c.tasks?.total || 0), 0),
     tasksDone: active.reduce((n, c) => n + (c.tasks?.done || 0), 0),
-    deltas: active.reduce((n, c) => n + c.deltas.reduce((m, d) => m + d.count, 0), 0)
+    deltas: active.reduce((n, c) => n + c.deltas.reduce((m, d) => m + d.count, 0), 0),
+    deltaFiles: active.reduce((n, c) => n + c.deltas.length, 0),
+    mergedDeltas: archived.reduce((n, c) => n + c.deltas.length, 0)
   };
   const project = { md: get('project.md')?.text || '', config: parseYamlLite(get('config.yaml')?.text || get('config.yml')?.text || ''), agents: get('AGENTS.md')?.text || '', otherTop: otherTop.filter(f => !/^(project\.md|config\.ya?ml|AGENTS\.md)$/i.test(f.path)), looseChangeFiles };
   const model = { specs: specList, specMap: specs, changes: changeList, active, archived, ghostCaps: [...ghostCaps.values()], stats, project, fileCount: files.length };
@@ -899,6 +940,74 @@ function svgLifecycle(L, { explainer = L.explainer, active = null } = {}) {
   return `<svg viewBox="0 0 ${L.width} ${L.height}" width="100%" aria-label="OpenSpec change lifecycle" xmlns="http://www.w3.org/2000/svg">${arrows}${stages}${explainer ? specsG : `<a href="${esc(link('specs'))}">${specsG}</a>`}</svg>`;
 }
 
+const RELATION_NODES = [
+  ['active', 'Active changes', 1, 0, 'changes', s => s.active],
+  ['pending', 'Pending spec deltas', 2, 0, 'changes', s => s.deltaFiles],
+  ['caps', 'Capabilities', 3, 0, 'specs', s => s.specs],
+  ['reqs', 'Requirements', 4, 0, 'specs', s => s.requirements],
+  ['scen', 'Scenarios', 5, 0, 'specs', s => s.scenarios],
+  ['tasks', 'Tasks', 2, 1, 'changes', s => `${s.tasksDone}/${s.tasksTotal}`],
+  ['archived', 'Archived changes', 1, 2, 'changes', s => s.archived],
+  ['merged', 'Merged spec deltas', 2, 2, 'changes', s => s.mergedDeltas]
+];
+function layoutRelations(m) {
+  const padL = 88, bw = 128, bh = 80, gap = 88, rowGap = 56;
+  const colX = c => padL + (c - 1) * (bw + gap);
+  const rowY = [8, 8 + bh + rowGap, 8 + 2 * (bh + rowGap)];
+  const s = m?.stats;
+  const nodes = RELATION_NODES.map(([key, label, col, row, view, count]) => ({
+    key, label, lines: wrapText(label, bw - 16), x: colX(col), y: rowY[row], w: bw, h: bh, href: link(view),
+    truth: ['caps', 'reqs', 'scen'].includes(key),
+    count: s ? String(count(s)) : null,
+    sub: !s ? '' : key === 'tasks' ? 'done' : key === 'caps' && m.ghostCaps.length ? `${m.ghostCaps.length} proposed` : ''
+  }));
+  const N = Object.fromEntries(nodes.map(n => [n.key, n]));
+  const midY = n => n.y + n.h / 2, right = n => n.x + n.w, cx = n => n.x + n.w / 2, bottom = n => n.y + n.h;
+  const below = (pts, text, w) => { const [a, b] = pts.slice(-2); return { lx: (a[0] + b[0]) / 2, ly: a[1] + 16, anchor: 'middle', lines: wrapText(text, w, 5.6, 3) }; };
+  const horiz = (key, from, to, text, extra = {}) => { const pts = [[right(from), midY(from)], [to.x, midY(to)]]; return { key, text, pts, ...below(pts, text, gap - 8), ...extra }; };
+  const a = N.active, t = N.tasks, ar = N.archived, mg = N.merged, cp = N.caps;
+  // active -> tasks leaves the bottom edge so it stays clear of the label under active -> pending
+  const toTasks = [[a.x + bw * 0.75, bottom(a)], [a.x + bw * 0.75, midY(t)], [t.x, midY(t)]];
+  const gapMid = right(mg) + gap / 2, underCaps = bottom(cp) + 20;
+  const toCaps = [[right(mg), midY(mg)], [gapMid, midY(mg)], [gapMid, underCaps], [cx(cp), underCaps], [cx(cp), bottom(cp)]];
+  const archText = 'archived once every task is done', capText = 'merged into the spec on archive';
+  const arrows = [
+    horiz('proposes', a, N.pending, 'proposes, one per capability touched'),
+    { key: 'lists', text: 'lists its work in tasks.md', pts: toTasks, ...below(toTasks, 'lists its work in tasks.md', t.x - toTasks[0][0] - 8) },
+    { key: 'archive', text: archText, pts: [[cx(a), bottom(a)], [cx(a), ar.y]], lx: cx(a) + 8, ly: midY(t) + 52, anchor: 'start', lines: wrapText(archText, t.x + bw - cx(a) - 8, 5.6, 3) },
+    horiz('carried', ar, mg, 'carried'),
+    { key: 'merged', text: capText, pts: toCaps, lx: gapMid + 8, ly: midY(t) + 4, anchor: 'start', lines: wrapText(capText, bw, 5.6, 3) },
+    horiz('applied', N.pending, cp, 'applied to the spec on archive', { dashed: true }),
+    horiz('listof', cp, N.reqs, 'a spec is a list of'),
+    horiz('proven', N.reqs, N.scen, 'each proven by')
+  ];
+  return { explainer: !m, width: colX(6) + bw + 8, height: rowY[2] + bh + 8, nodes, arrows };
+}
+function svgRelations(R) {
+  const unit = (p, q) => { const dx = q[0] - p[0], dy = q[1] - p[1], d = Math.hypot(dx, dy) || 1; return [dx / d, dy / d]; };
+  const arrows = R.arrows.map(a => {
+    const pts = a.pts.map(p => [...p]), n = pts.length;
+    const u0 = unit(pts[0], pts[1]), u1 = unit(pts[n - 2], pts[n - 1]), end = pts[n - 1];
+    const tip = [end[0] - 2 * u1[0], end[1] - 2 * u1[1]];
+    pts[0] = [pts[0][0] + 4 * u0[0], pts[0][1] + 4 * u0[1]];
+    pts[n - 1] = [end[0] - 8 * u1[0], end[1] - 8 * u1[1]];
+    const lines = pts.slice(1).map((q, i) => `<line x1="${r1(pts[i][0])}" y1="${r1(pts[i][1])}" x2="${r1(q[0])}" y2="${r1(q[1])}"/>`).join('');
+    const deg = r1(Math.atan2(u1[1], u1[0]) * 180 / Math.PI);
+    const head = `<path d="M${r1(tip[0])} ${r1(tip[1])}l-7 -4v8z"${deg ? ` transform="rotate(${deg} ${r1(tip[0])} ${r1(tip[1])})"` : ''}/>`;
+    return `<g class="arw${a.dashed ? ' pend' : ''}"><title>${esc(a.text)}</title>${lines}${head}${a.lines.map((l, i) => svgT(a.lx, a.ly + i * 13, l, 'al', a.anchor)).join('')}</g>`;
+  }).join('');
+  const nodes = R.nodes.map(n => {
+    const c = n.x + n.w / 2;
+    const label = R.explainer
+      ? n.lines.map((l, i) => svgT(c, n.y + n.h / 2 + 5 - (n.lines.length - 1) * 7 + i * 14, l, 'sl')).join('')
+      : n.lines.map((l, i) => svgT(c, n.y + 22 + i * 14, l, 'sl')).join('') + svgT(c, n.y + 62, n.count, 'sc num') + (n.sub ? svgT(c, n.y + 74, n.sub, 'ss') : '');
+    const tip = R.explainer ? n.label : `${n.label}: ${n.count}${n.sub ? ` ${n.sub}` : ''}`;
+    const g = `<g class="stage st-rel${n.truth ? ' st-specs' : ''}" data-node="${n.key}"><title>${esc(tip)}</title><rect class="box" x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="3"/><rect class="rule" x="${n.x}" y="${n.y}" width="${n.w}" height="3"/>${label}</g>`;
+    return R.explainer ? g : `<a href="${esc(n.href)}">${g}</a>`;
+  }).join('');
+  return `<svg viewBox="0 0 ${R.width} ${R.height}" width="100%" aria-label="How OpenSpec terms relate" xmlns="http://www.w3.org/2000/svg">${arrows}${nodes}</svg>`;
+}
+
 const DELTA_KINDS = [['added', 'add', 'added'], ['modified', 'mod', 'modified'], ['removed', 'rem', 'removed'], ['renamed', 'ren', 'renamed']];
 const IMPACT_MAX_PAIRS = 200;
 function layoutImpact(m) {
@@ -968,7 +1077,7 @@ function svgImpact(I) {
     const lab = n.side === 'L'
       ? `<text x="${n.x - 8}" y="${cy}" text-anchor="end"><tspan>${esc(n.text)}</tspan>${tail}</text>`
       : `<text x="${n.x + n.w + 8}" y="${cy}"><tspan>${esc(n.text)}</tspan>${tail}</text>`;
-    return `<g class="node${n.ghost ? ' ghost' : ''}" ${n.side === 'L' ? 'data-ch' : 'data-cap'}="${esc(n.id)}"><title>${esc(`${n.name}: ${plural(+n.count, 'delta')}${n.ghost ? ', new capability' : ''}`)}</title><rect class="nb" x="${n.x}" y="${r1(n.y)}" width="${n.w}" height="${r1(n.h)}" rx="1"/><a href="${esc(href)}">${lab}</a></g>`;
+    return `<g class="node${n.ghost ? ' ghost' : ''}" ${n.side === 'L' ? 'data-ch' : 'data-cap'}="${esc(n.id)}"><title>${esc(`${n.name}: ${plural(+n.count, 'requirement change')}${n.ghost ? ', new capability' : ''}`)}</title><rect class="nb" x="${n.x}" y="${r1(n.y)}" width="${n.w}" height="${r1(n.h)}" rx="1"/><a href="${esc(href)}">${lab}</a></g>`;
   };
   const band = b => {
     const mx = r1((b.x0 + b.x1) / 2), y0 = r1(b.y0), y1 = r1(b.y1), y0b = r1(b.y0 + b.t), y1b = r1(b.y1 + b.t);
@@ -978,7 +1087,14 @@ function svgImpact(I) {
   return `<svg viewBox="0 0 ${I.width} ${r1(I.height)}" width="100%" aria-label="Which active change touches which capability" xmlns="http://www.w3.org/2000/svg">${heads}${I.bands.map(band).join('')}${[...I.left, ...I.right].map(node).join('')}</svg>`;
 }
 
-function layoutLineage(sp, r) {
+function layoutLineageColumns(sp) {
+  const merged = sp.history.filter(ch => ch.deltas.some(d => d.capability === sp.id)).sort((a, b) => (a.archivedDate || '').localeCompare(b.archivedDate || ''));
+  return [
+    ...merged.map(ch => ({ key: ch.key, name: ch.name, date: ch.archivedDate || '', pending: false })),
+    ...sp.changes.map(ch => ({ key: ch.key, name: ch.name, date: 'pending', pending: true }))
+  ];
+}
+function layoutLineage(sp, r, cols = layoutLineageColumns(sp), step = LINEAGE_FULL.step) {
   const past = [];
   let cur = r.name;
   for (let i = sp.history.length - 1; i >= 0; i--) {
@@ -1006,29 +1122,64 @@ function layoutLineage(sp, r) {
     ...sp.pendingMods.filter(p => normName(p.curName) === n).map(p => pend(p, 'mod')),
     ...sp.pendingRemoves.filter(p => normName(p.curName) === n).map(p => pend(p, 'rem'))
   ];
-  const step = 184, y = 36, fitW = step - 30;
-  const events = [...past, ...pending].map((e, i) => ({
-    ...e, x: step * i + step / 2, y,
-    changeText: fitText(e.change, fitW, 6.1),
-    renText: e.kind === 'ren' ? fitText(`${e.from} → ${e.to}`, fitW, 5.6) : ''
-  }));
-  const firstPending = events.findIndex(e => e.pending);
-  return { events, width: step * events.length, height: events.some(e => e.renText) ? 84 : 68, y, splitX: firstPending > 0 ? events[firstPending].x - step / 2 : firstPending === 0 ? 0 : null };
+  const colOf = new Map(cols.map((c, i) => [c.key, i]));
+  const events = [...past, ...pending].map(e => { const col = colOf.get(e.key); return { ...e, col, x: step * col + step / 2 }; });
+  const firstPending = cols.findIndex(c => c.pending);
+  return { events, width: step * cols.length, step, splitX: firstPending < 0 ? null : step * firstPending };
 }
+const lineageTip = e => `${deltaOp(e.kind).label}${e.kind === 'ren' ? ` from “${e.from}” to “${e.to}”` : ''} in ${e.change}${e.pending ? ' (pending)' : ` on ${e.date}`}`;
+function lineageMark(e, y) {
+  const { x } = e, c = `mk k-${e.kind}${e.pending ? ' pend' : ''}`;
+  if (e.kind === 'add') return `<circle class="${c}" cx="${x}" cy="${y}" r="5.5"/>`;
+  if (e.kind === 'mod') return `<circle class="${c}" cx="${x}" cy="${y}" r="5"/>`;
+  if (e.kind === 'ren') return `<path class="${c}" d="M${x} ${y - 7}l7 7l-7 7l-7 -7z"/>`;
+  return `<path class="${c}" d="M${x - 5} ${y - 5}l10 10M${x + 5} ${y - 5}l-10 10"/>`;
+}
+function lineageBaseline(width, y, sx) {
+  const x0 = 8, x1 = width - 8;
+  return sx === null ? `<line class="bl" x1="${x0}" y1="${y}" x2="${x1}" y2="${y}"/>`
+    : `${sx > 0 ? `<line class="bl" x1="${x0}" y1="${y}" x2="${sx}" y2="${y}"/>` : ''}<line class="bl pend" x1="${Math.max(x0, sx)}" y1="${y}" x2="${x1}" y2="${y}"/>`;
+}
+
+// full lineage: every row labels its own events
+const LINEAGE_FULL = { step: 184, y: 36, height: 68, heightRen: 84 };
 function svgLineage(G) {
-  const mark = e => {
-    const { x, y } = e, c = `mk k-${e.kind}${e.pending ? ' pend' : ''}`;
-    if (e.kind === 'add') return `<circle class="${c}" cx="${x}" cy="${y}" r="5.5"/>`;
-    if (e.kind === 'mod') return `<circle class="${c}" cx="${x}" cy="${y}" r="5"/>`;
-    if (e.kind === 'ren') return `<path class="${c}" d="M${x} ${y - 7}l7 7l-7 7l-7 -7z"/>`;
-    return `<path class="${c}" d="M${x - 5} ${y - 5}l10 10M${x + 5} ${y - 5}l-10 10"/>`;
+  const { y } = LINEAGE_FULL, fitW = G.step - 30;
+  const ev = e => {
+    const renText = e.kind === 'ren' ? fitText(`${e.from} → ${e.to}`, fitW, 5.6) : '';
+    return `<g class="ev"><title>${esc(lineageTip(e))}</title>${svgT(e.x, 18, e.date || 'undated', 'ld num')}<circle class="mkbg" cx="${e.x}" cy="${y}" r="9"/>${lineageMark(e, y)}<a href="${esc(link('changes', e.key, 'deltas'))}">${svgT(e.x, 60, fitText(e.change, fitW, 6.1), 'lk')}</a>${renText ? svgT(e.x, 76, renText, 'lr') : ''}</g>`;
   };
-  const verb = { add: 'added', mod: 'modified', ren: 'renamed', rem: 'removed' };
-  const ev = e => `<g class="ev"><title>${esc(`${verb[e.kind]}${e.kind === 'ren' ? ` from “${e.from}” to “${e.to}”` : ''} in ${e.change}${e.pending ? ' (pending)' : ` on ${e.date}`}`)}</title>${svgT(e.x, 18, e.date || 'undated', 'ld num')}<circle class="mkbg" cx="${e.x}" cy="${e.y}" r="9"/>${mark(e)}<a href="${esc(link('changes', e.key, 'deltas'))}">${svgT(e.x, 60, e.changeText, 'lk')}</a>${e.renText ? svgT(e.x, 76, e.renText, 'lr') : ''}</g>`;
-  const x0 = 8, x1 = G.width - 8, sx = G.splitX;
-  const base = sx === null ? `<line class="bl" x1="${x0}" y1="${G.y}" x2="${x1}" y2="${G.y}"/>`
-    : `${sx > 0 ? `<line class="bl" x1="${x0}" y1="${G.y}" x2="${sx}" y2="${G.y}"/>` : ''}<line class="bl pend" x1="${Math.max(x0, sx)}" y1="${G.y}" x2="${x1}" y2="${G.y}"/>`;
-  return `<svg viewBox="0 0 ${G.width} ${G.height}" width="${G.width}" height="${G.height}" aria-label="Lineage of this requirement" xmlns="http://www.w3.org/2000/svg">${base}${G.events.map(ev).join('')}</svg>`;
+  const h = G.events.some(e => e.kind === 'ren') ? LINEAGE_FULL.heightRen : LINEAGE_FULL.height;
+  return `<svg viewBox="0 0 ${G.width} ${h}" width="${G.width}" height="${h}" aria-label="Lineage of this requirement" xmlns="http://www.w3.org/2000/svg">${lineageBaseline(G.width, y, G.splitX)}${G.events.map(ev).join('')}</svg>`;
+}
+
+// compact lineage: marks only per row, change names and dates once in a sticky axis row
+// the gutter leaves room for the last rotated axis label, which overhangs past the last column
+const LINEAGE_MARKS = { step: 56, gutter: 118, y: 13, height: 26, axisHeight: 150, nameW: 150, lift: 13 };
+function svgLineageMarks(G) {
+  const { y, height } = LINEAGE_MARKS, w = G.width + LINEAGE_MARKS.gutter;
+  const ev = e => `<g class="ev"><title>${esc(lineageTip(e))}</title><circle class="mkbg" cx="${e.x}" cy="${y}" r="9"/>${lineageMark(e, y)}</g>`;
+  return `<svg viewBox="0 0 ${w} ${height}" width="${w}" height="${height}" aria-label="Lineage of this requirement" xmlns="http://www.w3.org/2000/svg">${lineageBaseline(G.width, y, G.splitX)}${G.events.map(ev).join('')}</svg>`;
+}
+function svgLineageAxis(cols, step) {
+  const { axisHeight: h, gutter, nameW, lift } = LINEAGE_MARKS, yb = h - 10, width = step * cols.length, w = width + gutter;
+  const fp = cols.findIndex(c => c.pending);
+  const label = (c, i) => {
+    const x = step * i + step / 2;
+    return `<line class="tk" x1="${x}" y1="${yb + 2}" x2="${x}" y2="${h}"/><g class="axl" transform="translate(${r1(x)} ${yb}) rotate(-45)"><title>${esc(`${c.name}${c.pending ? ' (pending)' : c.date ? ` · archived ${c.date}` : ''}`)}</title>${svgT(4, 0, c.date || 'undated', 'ld num', 'start')}<a href="${esc(link('changes', c.key, 'deltas'))}">${svgT(4, -lift, fitText(c.name, nameW, 6.1), 'lk', 'start')}</a></g>`;
+  };
+  return `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" aria-label="Changes that touched this capability" xmlns="http://www.w3.org/2000/svg">${lineageBaseline(width, h - 1, fp < 0 ? null : step * fp)}${cols.map(label).join('')}</svg>`;
+}
+function renderLineageLegend() {
+  const x0 = 110, dx = 130;
+  let s = svgT(0, 21, 'Merged', 'lh', 'start') + svgT(0, 51, 'Pending', 'lh', 'start') + svgT(0, 81, 'Baseline', 'lh', 'start');
+  DELTA_OPS.forEach(({ k, label }, i) => {
+    const x = x0 + dx * i;
+    s += lineageMark({ kind: k, x }, 17) + svgT(x + 14, 21, label, '', 'start');
+    s += lineageMark({ kind: k, x, pending: true }, 47) + svgT(x + 14, 51, label, '', 'start');
+  });
+  s += `<line class="bl" x1="${x0 - 8}" y1="77" x2="${x0 + 100}" y2="77"/>${svgT(x0 + 108, 81, 'merged', '', 'start')}<line class="bl pend" x1="${x0 + dx * 2 - 8}" y1="77" x2="${x0 + dx * 2 + 100}" y2="77"/>${svgT(x0 + dx * 2 + 108, 81, 'pending', '', 'start')}`;
+  return `<h2>Legend <span class="hn">marks on the lineage timelines</span></h2><div class="dia lineage-legend"><svg viewBox="0 0 640 92" width="640" height="92" aria-label="Legend of the lineage marks" xmlns="http://www.w3.org/2000/svg">${s}</svg></div>`;
 }
 
 // ---------- sources: local folder ----------
@@ -1055,6 +1206,22 @@ function pickRoot(paths) {
   if (paths.some(p => /^(specs|changes)\//.test(p))) return '';
   return null;
 }
+function openspecVersionFrom(text) {
+  let pkg;
+  try { pkg = JSON.parse(text); } catch { return null; }
+  if (!pkg || typeof pkg !== 'object') return null;
+  const clean = v => typeof v === 'string' && v.trim().replace(/^[\^~>=<]+\s*/, '').split(/\s/)[0] || null;
+  if (pkg.name === '@fission-ai/openspec' && clean(pkg.version)) return { version: clean(pkg.version), kind: 'self' };
+  const dep = clean(pkg.dependencies?.['@fission-ai/openspec']) || clean(pkg.devDependencies?.['@fission-ai/openspec']);
+  return dep ? { version: dep, kind: 'dependency' } : null;
+}
+const openspecInfo = text => { const v = text == null ? null : openspecVersionFrom(text); return v ? { ...v, from: 'package.json' } : { version: null, kind: null, from: null }; };
+// package.json one level above the openspec folder; '' (the openspec folder itself) has no reachable parent
+const parentOf = root => root ? root.replace(/[^/]+\/$/, '') : null;
+async function readLocalOpenspec(dir) {
+  if (!dir) return openspecInfo(null);
+  try { return openspecInfo(await (await (await dir.getFileHandle('package.json')).getFile()).text()); } catch { return openspecInfo(null); }
+}
 async function findOpenspecHandle(root) {
   // breadth-first search for a directory named openspec (max depth 4), else root itself if it looks like one
   const q = [{ h: root, depth: 0, path: '' }];
@@ -1063,8 +1230,8 @@ async function findOpenspecHandle(root) {
     const { h, depth, path } = q.shift();
     const entries = await names(h);
     const hit = entries.find(([n, c]) => n === 'openspec' && c.kind === 'directory');
-    if (hit) return { handle: hit[1], path: (path ? path + '/' : '') + 'openspec' };
-    if (depth === 0 && entries.some(([n, c]) => n === 'specs' && c.kind === 'directory') && entries.some(([n, c]) => n === 'changes' && c.kind === 'directory')) return { handle: h, path: '' };
+    if (hit) return { handle: hit[1], path: (path ? path + '/' : '') + 'openspec', parent: h };
+    if (depth === 0 && entries.some(([n, c]) => n === 'specs' && c.kind === 'directory') && entries.some(([n, c]) => n === 'changes' && c.kind === 'directory')) return { handle: h, path: '', parent: null };
     if (depth < 4) for (const [n, c] of entries) if (c.kind === 'directory' && !SKIP_DIRS.has(n) && !n.startsWith('.')) q.push({ h: c, depth: depth + 1, path: (path ? path + '/' : '') + n });
   }
   return null;
@@ -1100,10 +1267,11 @@ async function loadFromDirectoryHandle(rootHandle, { remember = true } = {}) {
   const found = await findOpenspecHandle(rootHandle);
   if (!found) throw new Error(`No openspec/ folder found inside “${rootHandle.name}” (searched 4 levels deep). Point at the repository root or at the openspec folder itself.`);
   const { files, sig } = await readHandleFiles(found.handle);
+  const openspec = await readLocalOpenspec(found.parent);
   if (remember) {
     try { await idb.put({ id: 'local:' + rootHandle.name, name: rootHandle.name, handle: rootHandle, lastOpened: Date.now() }); localStorage.setItem('osv.last', JSON.stringify({ type: 'local', id: 'local:' + rootHandle.name })); } catch (e) { console.warn('could not persist handle', e); }
   }
-  return { source: { type: 'local', label: rootHandle.name + (found.path ? '/' + found.path : ''), handle: rootHandle, osHandle: found.handle, sig }, files };
+  return { source: { type: 'local', label: rootHandle.name + (found.path ? '/' + found.path : ''), handle: rootHandle, osHandle: found.handle, pkgDir: found.parent, openspec, sig }, files };
 }
 function filesFromFileList(list) {
   // <input webkitdirectory> or drag-drop entries: File objects with a relative path
@@ -1115,13 +1283,14 @@ function filesFromFileList(list) {
   for (const i of items) if (sameTop) i.path = i.path.slice(top.length + 1);
   const root = pickRoot(items.map(i => i.path));
   if (root === null) throw new Error(`No openspec/ folder found in “${top}”.`);
-  return { label: top + (root ? '/' + root.replace(/\/$/, '') : ''), items: items.filter(i => i.path.startsWith(root) && !i.path.split('/').some(seg => SKIP_DIRS.has(seg) || (seg.startsWith('.') && seg !== '.openspec.yaml')) && (TEXT_EXT.test(i.path) || i.path.endsWith('.openspec.yaml'))).map(i => ({ ...i, path: i.path.slice(root.length) })) };
+  const pkgPath = parentOf(root) === null ? null : parentOf(root) + 'package.json';
+  return { label: top + (root ? '/' + root.replace(/\/$/, '') : ''), pkg: items.find(i => i.path === pkgPath), items: items.filter(i => i.path.startsWith(root) && !i.path.split('/').some(seg => SKIP_DIRS.has(seg) || (seg.startsWith('.') && seg !== '.openspec.yaml')) && (TEXT_EXT.test(i.path) || i.path.endsWith('.openspec.yaml'))).map(i => ({ ...i, path: i.path.slice(root.length) })) };
 }
 async function loadFromFileList(list) {
-  const { label, items } = filesFromFileList(list);
+  const { label, items, pkg } = filesFromFileList(list);
   const files = [];
   for (const i of items) files.push({ path: i.path, text: await i.file.text(), mtime: i.file.lastModified, size: i.file.size });
-  return { source: { type: 'files', label }, files };
+  return { source: { type: 'files', label, openspec: openspecInfo(pkg ? await pkg.file.text() : null) }, files };
 }
 async function readDropEntries(items) {
   const out = [];
@@ -1213,12 +1382,32 @@ async function loadFromGithub(spec, token, prev) {
     }
   };
   await Promise.all(Array.from({ length: 8 }, worker));
+  const pkgPath = parentOf(root) === null ? null : parentOf(root) + 'package.json';
+  let pkgText = null;
+  if (paths.includes(pkgPath)) { const r = await fetch(urlFor(pkgPath), { headers }); if (r.ok) pkgText = await r.text(); }
   const label = `${repo.owner}/${repo.repo}@${ref}${root ? '/' + root.replace(/\/$/, '') : ''}`;
   const recents = JSON.parse(localStorage.getItem('osv.gh') || '[]').filter(r => r.spec !== `${repo.owner}/${repo.repo}${repo.ref ? '@' + repo.ref : ''}${repo.sub ? '/' + repo.sub : ''}`);
   recents.unshift({ spec: `${repo.owner}/${repo.repo}${repo.ref ? '@' + repo.ref : ''}${repo.sub ? '/' + repo.sub : ''}`, label, t: Date.now() });
   localStorage.setItem('osv.gh', JSON.stringify(recents.slice(0, 8)));
   localStorage.setItem('osv.last', JSON.stringify({ type: 'github', spec: recents[0].spec }));
-  return { source: { type: 'github', label, repo: { ...repo, ref }, token, treeSha: tree.sha, truncated: tree.truncated, url: `https://github.com/${repo.owner}/${repo.repo}/tree/${ref}/${root}` }, files };
+  return { source: { type: 'github', label, repo: { ...repo, ref }, token, treeSha: tree.sha, truncated: tree.truncated, openspec: openspecInfo(pkgText), url: `https://github.com/${repo.owner}/${repo.repo}/tree/${ref}/${root}` }, files };
+}
+// a script tag rather than fetch, because fetch of a local file fails over file://
+let samplePromise = null;
+function loadSampleScript() {
+  if (window.OSV_SAMPLE) return Promise.resolve(window.OSV_SAMPLE);
+  return samplePromise ||= new Promise((res, rej) => {
+    const el = document.createElement('script');
+    el.src = 'sample/sample.js';
+    el.onload = () => window.OSV_SAMPLE ? res(window.OSV_SAMPLE) : rej(new Error('sample/sample.js loaded but defined no sample.'));
+    el.onerror = () => { samplePromise = null; el.remove(); rej(new Error('Could not load sample/sample.js, which ships next to index.html.')); };
+    document.head.appendChild(el);
+  });
+}
+async function loadSample() {
+  const smp = await loadSampleScript();
+  localStorage.setItem('osv.last', JSON.stringify({ type: 'sample' }));
+  return { source: { type: 'sample', label: smp.label, openspec: smp.source.openspec ? { ...smp.source.openspec, from: 'package.json' } : openspecInfo(null), url: `https://github.com/${smp.source.repo}/tree/${smp.source.commit}/openspec` }, files: smp.files };
 }
 
 // ---------- loading orchestration ----------
@@ -1247,14 +1436,15 @@ async function checkLocal() {
   if (state.status === 'busy') return;
   try {
     const { files, sig } = await readHandleFiles(state.source.osHandle);
-    if (sig !== state.source.sig) { state.source.sig = sig; applyLoad({ source: state.source, files }); }
+    const openspec = await readLocalOpenspec(state.source.pkgDir);
+    if (sig !== state.source.sig || openspec.version !== state.source.openspec.version || openspec.kind !== state.source.openspec.kind) { state.source.sig = sig; state.source.openspec = openspec; applyLoad({ source: state.source, files }); }
   } catch (e) { console.warn('refresh failed', e); state.error = 'Lost access to the folder: ' + e.message; setStatus('error'); render(); }
 }
 async function refreshNow() {
   if (!state.source) return;
   if (state.source.type === 'local') {
     setStatus('busy', 'rereading…');
-    try { const { files, sig } = await readHandleFiles(state.source.osHandle); state.source.sig = sig; applyLoad({ source: state.source, files }); }
+    try { const { files, sig } = await readHandleFiles(state.source.osHandle); state.source.sig = sig; state.source.openspec = await readLocalOpenspec(state.source.pkgDir); applyLoad({ source: state.source, files }); }
     catch (e) { console.warn('refresh failed', e); state.error = 'Lost access to the folder: ' + e.message; setStatus('error'); render(); }
   }
   else if (state.source.type === 'github') runLoad(() => loadFromGithub(state.source.repo, state.source.token));
@@ -1277,6 +1467,7 @@ async function pickFolder() {
 async function tryRestore() {
   const last = JSON.parse(localStorage.getItem('osv.last') || 'null');
   if (!last) return false;
+  if (last.type === 'sample') { await runLoad(loadSample); return true; }
   if (last.type === 'github') {
     const token = sessionStorage.getItem('osv.ghtoken') || localStorage.getItem('osv.ghtoken') || '';
     await runLoad(() => loadFromGithub(last.spec, token));
@@ -1300,7 +1491,7 @@ async function tryRestore() {
 function parseHash() {
   const h = location.hash.replace(/^#\/?/, '');
   const [view, id, tab] = h.split('/').map(decodeURIComponent);
-  state.route = { view: ['overview', 'specs', 'changes', 'project'].includes(view) ? view : 'overview', id: id || null, tab: tab || null };
+  state.route = { view: ['overview', 'specs', 'changes', 'project', 'help'].includes(view) ? view : 'overview', id: id || null, tab: tab || null };
 }
 window.addEventListener('hashchange', () => { parseHash(); render(); window.scrollTo(0, 0); });
 const link = (view, id, tab) => '#/' + [view, id, tab].filter(Boolean).map(encodeURIComponent).join('/');
@@ -1308,7 +1499,7 @@ const link = (view, id, tab) => '#/' + [view, id, tab].filter(Boolean).map(encod
 // ---------- rendering: chrome ----------
 function renderNav() {
   const m = state.model;
-  const items = [['overview', 'Overview'], ['specs', `Specs${m ? ` <span class="c num">${m.stats.specs}</span>` : ''}`], ['changes', `Changes${m ? ` <span class="c num">${m.stats.active}</span>` : ''}`], ['project', 'Project']];
+  const items = [['overview', 'Overview'], ['specs', `Specs${m ? ` <span class="c num">${m.stats.specs}</span>` : ''}`], ['changes', `Changes${m ? ` <span class="c num">${m.stats.active}</span>` : ''}`], ['project', 'Project'], ['help', 'Help']];
   $('#nav').innerHTML = items.map(([v, l]) => `<a href="${link(v)}" class="${state.route.view === v ? 'on' : ''}">${l}</a>`).join('');
 }
 const THEMES = ['light', 'dark', 'system'];
@@ -1329,12 +1520,12 @@ let srcMenuOpen = false;
 function renderSrcBar() {
   const s = state.source;
   const dot = `<span class="dot ${state.status === 'live' ? 'live' : state.status === 'busy' ? 'busy' : state.status === 'error' ? 'err' : ''}" title="${esc(state.statusMsg || state.status)}"></span>`;
-  const menu = srcMenuOpen ? `<div class="menu" role="menu"><button role="menuitem" id="srcbtn">${s ? 'Change source…' : 'Open source…'}</button>${s && s.type === 'github' ? `<a role="menuitem" href="${esc(s.url)}" target="_blank" rel="noopener">Open on GitHub</a>` : ''}</div>` : '';
+  const menu = srcMenuOpen ? `<div class="menu" role="menu"><button role="menuitem" id="srcbtn">${s ? 'Change source…' : 'Open source…'}</button>${s && s.url ? `<a role="menuitem" href="${esc(s.url)}" target="_blank" rel="noopener">Open on GitHub</a>` : ''}</div>` : '';
   const chip = `<div class="srcmenu"><button class="chip" id="srcchip" aria-haspopup="menu" aria-expanded="${srcMenuOpen}" title="${s ? esc(s.label) : 'No source loaded'}">${dot}${s ? `<b>${esc(s.label)}</b>` : 'No source'}<span class="caret"></span></button>${menu}</div>`;
   const when = state.loadedAt ? `<span class="muted" title="${new Date(state.loadedAt).toLocaleString()}">${state.status === 'busy' ? esc(state.statusMsg || 'loading…') : 'read ' + ago(state.loadedAt)}</span>` : '';
-  const auto = s && s.type !== 'files' ? `<label class="tgl sw" title="${s.type === 'local' ? 'Re-read the folder every 3 s and redraw when a file changes' : 'Re-check GitHub every 90 s'}"><input type="checkbox" id="autochk" ${state.auto ? 'checked' : ''}> Live</label>` : '';
+  const auto = s && s.type !== 'files' && s.type !== 'sample' ? `<label class="tgl sw" title="${s.type === 'local' ? 'Re-read the folder every 3 s and redraw when a file changes' : 'Re-check GitHub every 90 s'}"><input type="checkbox" id="autochk" ${state.auto ? 'checked' : ''}> Live</label>` : '';
   const nextTheme = THEMES[(THEMES.indexOf(themeSetting()) + 1) % 3];
-  const icons = `<span class="igrp"><a class="ibtn" href="${REPO_URL}" target="_blank" rel="noopener" title="human-spec on GitHub" aria-label="human-spec on GitHub">${ICONS.github}</a>${s ? `<button class="ibtn" id="refreshbtn" title="Read the source again now" aria-label="Reread now">${ICONS.refresh}</button>` : ''}<button class="ibtn" id="themebtn" title="Theme: ${{ light: 'light', dark: 'dark', system: 'follows the system' }[themeSetting()]}. Click for ${nextTheme}." aria-label="Theme: ${themeSetting()}">${ICONS[themeSetting()]}</button></span>`;
+  const icons = `<span class="igrp"><a class="ibtn" href="${REPO_URL}" target="_blank" rel="noopener" title="human-spec on GitHub" aria-label="human-spec on GitHub">${ICONS.github}</a>${s && s.type !== 'sample' ? `<button class="ibtn" id="refreshbtn" title="Read the source again now" aria-label="Reread now">${ICONS.refresh}</button>` : ''}<button class="ibtn" id="themebtn" title="Theme: ${{ light: 'light', dark: 'dark', system: 'follows the system' }[themeSetting()]}. Click for ${nextTheme}." aria-label="Theme: ${themeSetting()}">${ICONS[themeSetting()]}</button></span>`;
   $('#srcbar').innerHTML = `${chip}${when}${auto}${icons}`;
   $('#srcchip').onclick = e => { e.stopPropagation(); srcMenuOpen = !srcMenuOpen; renderSrcBar(); if (srcMenuOpen) $('#srcbtn')?.focus(); };
   $('#srcbtn') && ($('#srcbtn').onclick = () => { srcMenuOpen = false; renderSrcBar(); openSourceDialog(); });
@@ -1351,21 +1542,52 @@ function render({ keepScroll } = {}) {
   const y = window.scrollY;
   renderNav(); renderSrcBar();
   const app = $('#app');
-  if (!state.model) { app.innerHTML = renderWelcome(); wireWelcome(); return; }
   const v = state.route.view;
+  if (!state.model && v === 'help') { app.innerHTML = renderHelp(); wireCommon(); return; }
+  if (!state.model) { app.innerHTML = renderWelcome(); wireWelcome(); return; }
   app.innerHTML = state.error ? `<div class="err">${esc(state.error)}</div>` : '';
-  app.innerHTML += v === 'specs' ? renderSpecs() : v === 'changes' ? renderChanges() : v === 'project' ? renderProject() : renderOverview();
+  app.innerHTML += v === 'specs' ? renderSpecs() : v === 'changes' ? renderChanges() : v === 'project' ? renderProject() : v === 'help' ? renderHelp() : renderOverview();
   wireCommon();
   if (keepScroll) window.scrollTo(0, y);
+}
+// requirements use a custom disclosure so the lineage timeline can sit between heading and body
+function setOpen(el, open) {
+  if (el.tagName === 'DETAILS') el.open = open;
+  else {
+    el.classList.toggle('open', open);
+    el.querySelector(':scope>.rh').setAttribute('aria-expanded', open);
+    el.querySelector(':scope>.rb').hidden = !open;
+  }
+  if (open) state.open.add(el.dataset.key); else state.open.delete(el.dataset.key);
 }
 function wireCommon() {
   for (const d of document.querySelectorAll('details[data-key]')) {
     d.addEventListener('toggle', () => { if (d.open) state.open.add(d.dataset.key); else state.open.delete(d.dataset.key); });
   }
+  for (const h of document.querySelectorAll('.req[data-key]>.rh')) {
+    const el = h.parentElement;
+    h.onclick = e => { if (!e.target.closest('a')) setOpen(el, !el.classList.contains('open')); };
+    h.onkeydown = e => { if (e.target === h && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setOpen(el, !el.classList.contains('open')); } };
+  }
   $('#openonly') && ($('#openonly').onchange = e => { state.openOnly = e.target.checked; localStorage.setItem('osv.openOnly', state.openOnly ? '1' : '0'); render({ keepScroll: true }); });
   $('#specsearch') && ($('#specsearch').oninput = e => { state.specFilter = e.target.value; renderSideSpecs(); });
   $('#reqsearch') && ($('#reqsearch').oninput = e => { state.reqFilter = e.target.value; render({ keepScroll: true }); setTimeout(() => { const i = $('#reqsearch'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }); });
-  for (const b of document.querySelectorAll('[data-expand]')) b.onclick = () => { const open = b.dataset.expand === '1'; for (const d of b.closest('section, main').querySelectorAll('details[data-key]')) { d.open = open; if (open) state.open.add(d.dataset.key); else state.open.delete(d.dataset.key); } };
+  for (const b of document.querySelectorAll('[data-expand]')) b.onclick = () => { const open = b.dataset.expand === '1'; for (const d of b.closest('section, main').querySelectorAll('details[data-key], .req[data-key]')) setOpen(d, open); };
+  $('#compactlineage') && ($('#compactlineage').onchange = e => { state.compactLineage = e.target.checked; localStorage.setItem('osv.compactLineage', state.compactLineage ? '1' : '0'); render({ keepScroll: true }); });
+  for (const el of document.querySelectorAll('.dia-lineage')) el.scrollLeft = el.scrollWidth;
+  const strips = new Map();
+  for (const el of document.querySelectorAll('.dia-lineage')) { const sec = el.closest('section'); strips.set(sec, [...(strips.get(sec) || []), el]); }
+  for (const group of strips.values()) {
+    // the driver guard stops the strips that were scrolled programmatically from echoing back
+    let driver = null, t = 0;
+    for (const el of group) el.addEventListener('scroll', () => {
+      if (driver && driver !== el) return;
+      driver = el;
+      for (const o of group) if (o !== el && o.scrollLeft !== el.scrollLeft) o.scrollLeft = el.scrollLeft;
+      clearTimeout(t);
+      t = setTimeout(() => { driver = null; }, 120);
+    }, { passive: true });
+  }
   for (const b of document.querySelectorAll('[data-dv]')) b.onclick = () => { state.deltaView[b.dataset.key] = b.dataset.dv; render({ keepScroll: true }); };
   const lc = $('.dia-lifecycle[data-live]');
   if (lc) lc.onclick = lc.onkeydown = e => {
@@ -1415,6 +1637,10 @@ function sourceOptionsHtml() {
       <div class="row spread"><label class="tgl small"><input type="checkbox" id="ghremember" ${localStorage.getItem('osv.ghtoken') ? 'checked' : ''}> Remember the token on this device</label><button class="primary" id="ghbtn">Load repository</button></div>
       ${recentsGh.length ? `<div class="recent"><span class="small muted">Recent</span>${recentsGh.map(r => `<button class="small" data-gh="${esc(r.spec)}">${esc(r.spec)}</button>`).join('')}</div>` : ''}
     </div>
+    <div class="opt sample">
+      <div><h3>Sample</h3><p>The OpenSpec project's own specs and changes, bundled with this page, so no network is needed.</p></div>
+      <button id="samplebtn">Open the sample</button>
+    </div>
   </div>`;
 }
 function renderWelcome() {
@@ -1455,6 +1681,7 @@ function wireSourceControls(root, { inDialog } = {}) {
   if (ghbtn) ghbtn.onclick = () => doGh($('#ghspec', root).value);
   const ghspec = $('#ghspec', root); if (ghspec) ghspec.onkeydown = e => { if (e.key === 'Enter') doGh(ghspec.value); };
   for (const b of root.querySelectorAll('[data-gh]')) b.onclick = () => doGh(b.dataset.gh);
+  const sb = $('#samplebtn', root); if (sb) sb.onclick = () => { closeDialog(); runLoad(loadSample); };
   const rb = $('#reconnectbtn', root); if (rb) rb.onclick = () => { const rec = state.pendingReconnect; state.pendingReconnect = null; closeDialog(); runLoad(() => reconnect(rec)); };
   idb.all().then(recs => {
     const el = $('#recentlocal', root); if (!el || !recs.length) return;
@@ -1478,25 +1705,49 @@ function closeDialog() { const d = $('#dlg'); if (d.open) d.close(); }
 const STATUS = { progress: 'In progress', untouched: 'Not started', complete: 'Complete', draft: 'Drafting', archived: 'Archived' };
 const pill = ch => `<span class="pill ${ch.status}"><span class="dot"></span>${STATUS[ch.status]}</span>`;
 const bar = (done, total, lg) => `<div class="bar ${lg ? 'lg' : ''} ${total && done === total ? 'done' : ''}"><i style="width:${pct(done, total)}%"></i></div>`;
-const deltaBadges = d => [d.added.length && `<span class="badge add" title="${d.added.length} added">+${d.added.length}</span>`, d.modified.length && `<span class="badge mod" title="${d.modified.length} modified">~${d.modified.length}</span>`, d.removed.length && `<span class="badge rem" title="${d.removed.length} removed">−${d.removed.length}</span>`, d.renamed.length && `<span class="badge ren" title="${d.renamed.length} renamed">↔${d.renamed.length}</span>`].filter(Boolean).join('');
+const DELTA_OPS = [
+  { k: 'add', key: 'added', label: 'added', glyph: '+', icon: 'added' },
+  { k: 'mod', key: 'modified', label: 'modified', glyph: '~', icon: 'modified' },
+  { k: 'rem', key: 'removed', label: 'removed', glyph: '−', icon: 'removed' },
+  { k: 'ren', key: 'renamed', label: 'renamed', glyph: '↔', icon: 'renamed' }
+];
+const deltaOp = k => DELTA_OPS.find(o => o.k === k);
+const icon = name => `<i class="ico ${name}" aria-hidden="true"></i>`;
+const deltaBadges = d => DELTA_OPS.filter(o => d[o.key].length).map(o => `<span class="badge ${o.k}" title="${d[o.key].length} ${o.label}">${o.glyph}${d[o.key].length}</span>`).join('');
 const capTag = (id, exists) => `<a class="tag" href="${exists ? link('specs', id) : link('overview')}">${esc(id)}</a>`;
 // meta line: short facts separated by thin rules
 const meta = parts => `<p class="meta">${parts.filter(Boolean).map(p => `<span>${p}</span>`).join('')}</p>`;
 // title block: the drawing-sheet corner that carries the page's key figures
 const titleBlock = cells => `<div class="tb">${cells.filter(Boolean).map(([v, l, s]) => `<div><div class="v">${v}</div><div class="l">${l}</div>${s ? `<div class="s">${s}</div>` : ''}</div>`).join('')}</div>`;
-const pageHead = (title, metaParts, cells) => `<div class="head"><div class="hl"><h1>${title}</h1>${metaParts ? meta(metaParts) : ''}</div>${cells ? titleBlock(cells) : ''}</div>`;
+const pageHead = (title, metaParts, cells, cls = '') => `<div class="head${cls ? ' ' + cls : ''}"><div class="hl"><h1>${title}</h1>${metaParts ? meta(metaParts) : ''}</div>${cells ? titleBlock(cells) : ''}</div>`;
 function scenarioHtml(sc) {
   return `<div class="scn"><div class="st">${esc(sc.name)}</div><ul>${sc.steps.map(s => `<li>${s.kw ? `<span class="kw ${s.kw}">${s.kw}</span>` : ''}<span>${inline(s.text)}</span></li>`).join('')}</ul></div>`;
 }
-function requirementHtml(r, key, { badges = '', cls = '', extra = '' } = {}) {
+let reqSeq = 0;
+function requirementHtml(r, key, { badges = '', cls = '', extra = '', timeline = '' } = {}) {
   const open = state.open.has(key);
-  return `<details class="req ${cls}" data-key="${esc(key)}" ${open ? 'open' : ''}>
-    <summary><span class="rn">${esc(r.name)}</span>${badges}<span class="rm">${plural(r.scenarios.length, 'scenario')}</span></summary>
-    <div class="rb">${extra}${r.reason ? `<div class="notice"><b>Reason:</b> ${inline(r.reason)}</div>` : ''}<div class="md">${md(r.text.replace(/\*\*Reason\*\*:?[\s\S]*?(\n\n|$)/, ''))}</div>${r.scenarios.map(scenarioHtml).join('')}</div>
-  </details>`;
+  const id = `rb${++reqSeq}`;
+  return `<div class="req ${cls}${open ? ' open' : ''}" data-key="${esc(key)}">
+    <div class="rh" role="button" tabindex="0" aria-expanded="${open}" aria-controls="${id}"><span class="rn">${esc(r.name)}</span>${badges}<span class="rm">${plural(r.scenarios.length, 'scenario')}</span></div>
+    ${timeline}<div class="rb" id="${id}"${open ? '' : ' hidden'}>${extra}${r.reason ? `<div class="notice"><b>Reason:</b> ${inline(r.reason)}</div>` : ''}<div class="md">${md(r.text.replace(/\*\*Reason\*\*:?[\s\S]*?(\n\n|$)/, ''))}</div>${r.scenarios.map(scenarioHtml).join('')}</div>
+  </div>`;
 }
 
 // ---------- overview ----------
+// the six OpenSpec terms, in the order the relationship reads: what the system is, then what changes it
+const VOCAB = [
+  { n: 'Capability', icon: 'capability', w: 'specs/<name>/spec.md', p: 'One area of behaviour the system has today. Its spec is the source of truth, and is only ever rewritten by archiving a change.', c: (m, s) => [`${plural(s.specs, 'spec')}${m.ghostCaps.length ? `, ${m.ghostCaps.length} proposed` : ''}`, link('specs')] },
+  { n: 'Requirement', icon: 'requirement', w: '### Requirement:', p: 'One thing a capability SHALL do. A spec is a list of requirements, and spec deltas change specs at this level.', c: (m, s) => [plural(s.requirements, 'requirement'), link('specs')] },
+  { n: 'Scenario', icon: 'scenario', w: '#### Scenario:', p: 'A concrete GIVEN, WHEN, THEN case that proves a requirement holds. Every requirement needs at least one.', c: (m, s) => [plural(s.scenarios, 'scenario'), link('specs')] },
+  { n: 'Change', icon: 'change', w: 'changes/<name>/', p: 'A proposal to alter the system: a proposal.md saying why, an optional design.md saying how, spec deltas saying what, and a tasks.md listing the work. Active while under changes/, archived once moved to changes/archive/.', c: (m, s) => [`${s.active} active, ${s.archived} archived`, link('changes')] },
+  { n: 'Spec delta', icon: 'spec-delta', w: 'changes/<name>/specs/<capability>/spec.md', p: 'One file per capability a change touches, listing the requirement changes it makes there: the requirements it ADDS, MODIFIES, REMOVES or RENAMES. A change’s deltas are exactly the capabilities it touches. Archiving merges each delta into its capability’s spec.', c: (m, s) => [`${s.deltaFiles} pending in ${plural(m.active.filter(c => c.deltas.length).length, 'change')}`, link('changes')] },
+  { n: 'Task', icon: 'task', w: 'changes/<name>/tasks.md', p: 'A checklist item: the implementation work that makes a change’s deltas true. Ticking tasks moves a change from Not started through In progress to Complete.', c: (m, s) => [`${s.tasksDone} of ${s.tasksTotal} done`, link('changes')] }
+];
+function renderVocab(m) {
+  const s = m?.stats;
+  return `<p class="chain">A <b>change</b> proposes <b>spec deltas</b> against <b>capabilities</b>. Each delta is a list of requirement changes: the <b>requirements</b> it adds, modifies, removes or renames, and every requirement is proven by <b>scenarios</b>. <b>Tasks</b> are the work that makes the deltas true; archiving the change merges its deltas into the specs.</p>
+    <div class="vocab">${VOCAB.map(t => { const [count, href] = m ? t.c(m, s) : []; return `<div class="term"><div class="t"><span class="n">${icon(t.icon)}${esc(t.n)}<span class="w">${esc(t.w)}</span></span>${m ? `<a class="c num" href="${href}">${esc(count)}</a>` : ''}</div><p class="p">${t.p}</p>${t.icon === 'spec-delta' ? `<p class="ops">${DELTA_OPS.map(o => `<span>${icon(o.icon)}${o.label}</span>`).join('')}</p>` : ''}</div>`; }).join('')}</div>`;
+}
 function renderOverview() {
   const m = state.model, s = m.stats;
   const inProg = m.active.filter(c => c.status === 'progress');
@@ -1506,7 +1757,7 @@ function renderOverview() {
     [s.requirements, 'requirements', plural(s.scenarios, 'scenario')],
     [s.active, 'active changes', `${inProg.length} in progress, ${notStarted} not started`],
     [`${pct(s.tasksDone, s.tasksTotal)}%`, 'of active tasks done', `${s.tasksDone} of ${s.tasksTotal}`],
-    [s.deltas, 'pending spec deltas', `in ${plural(m.active.filter(c => c.deltas.length).length, 'change')}`],
+    [s.deltas, 'pending requirement changes', `in ${plural(s.deltaFiles, 'spec delta')} across ${plural(m.active.filter(c => c.deltas.length).length, 'change')}`],
     [s.archived, 'archived', m.archived[0]?.archivedDate ? `last on ${m.archived[0].archivedDate}` : '']
   ];
   // ledger of active changes, grouped by state, optionally narrowed to one lifecycle stage
@@ -1529,8 +1780,6 @@ function renderOverview() {
   const ivBtn = (v, l) => `<button class="small ${iv === v ? 'primary' : ''}" data-iv="${v}" aria-pressed="${iv === v}">${l}</button>`;
   const impactHead = `<div class="h2row"><h2>Impact <span class="hn">${impactL?.tooMany ? `${impactL.pairs} change–capability pairs are too many to draw as a flow, so this is the matrix` : 'which active change touches which capability'}</span></h2>${impactL && !impactL.tooMany ? `<div class="row" style="gap:4px" role="group" aria-label="Impact view">${ivBtn('flow', 'Flow')}${ivBtn('matrix', 'Matrix')}</div>` : ''}</div>`;
   const impact = iv === 'flow' ? `<div class="dia dia-impact">${svgImpact(impactL)}</div>` : matrix;
-  // next open tasks
-  const nextUp = inProg.map(ch => { const open = ch.tasks.sections.flatMap(s => s.items.filter(i => !i.done && i.depth === 0).map(i => ({ ...i, sec: s.title }))).slice(0, 3); return open.length ? `<div class="nx"><div class="t"><a href="${link('changes', ch.key, 'tasks')}">${esc(ch.name)}</a><span class="small muted num">${ch.tasks.total - ch.tasks.done} open</span></div><ul>${open.map(i => `<li><span class="cb"></span><span><span class="muted num">${esc(i.id)}</span> ${inline(i.text)}</span></li>`).join('')}</ul></div>` : ''; }).join('');
   // attention
   const nWarn = m.issues.filter(i => i.lvl === 'warn').length, nInfo = m.issues.filter(i => i.lvl === 'info').length;
   const issues = m.issues.length ? `${m.issues.slice(0, 40).map(i => `<div class="issue"><span class="ic ${i.lvl === 'info' ? 'info' : ''}">${i.lvl === 'info' ? 'i' : '!'}</span><span>${i.text} <a href="${esc(i.href)}" class="small">open</a></span></div>`).join('')}${m.issues.length > 40 ? `<div class="small muted" style="padding-top:8px">${m.issues.length - 40} more not shown</div>` : ''}` : '<div class="empty">Deltas match the current specs, every requirement has scenarios, and no change is stuck.</div>';
@@ -1543,20 +1792,18 @@ function renderOverview() {
   const tl = [...m.archived].sort((a, b) => (b.archivedDate || '').localeCompare(a.archivedDate || ''));
   const timeline = tl.length ? `<div class="tl">${tl.map(ch => `<div class="d">${esc(ch.archivedDate || '')}</div><div class="e"><a href="${link('changes', ch.key)}">${esc(ch.name)}</a>${ch.tasks ? `<span class="small muted num">${ch.tasks.total} tasks</span>` : ''}${ch.deltas.map(d => `<span class="tag">${esc(d.capability)} ${deltaBadges(d)}</span>`).join('')}</div>`).join('')}</div>` : '<div class="empty">Nothing archived yet.</div>';
   return `
-    ${pageHead('Overview', [esc(state.source.label), `<span class="num">${m.fileCount} files</span>`, state.loadedAt && `read ${ago(state.loadedAt)}`, state.source.truncated && '<span class="notice" style="margin:0;padding:2px 8px">GitHub truncated the file listing; some files may be missing.</span>'], cells)}
+    ${pageHead(esc(state.source.label), [`<span class="num">${m.fileCount} files</span>`, state.source.openspec?.version && `OpenSpec ${esc(state.source.openspec.version)}`, state.loadedAt && `read ${ago(state.loadedAt)}`, state.source.truncated && '<span class="notice" style="margin:0;padding:2px 8px">GitHub truncated the file listing; some files may be missing.</span>'], cells)}
     <h2>Flow <span class="hn">where each active change stands</span></h2>
     <div class="dia dia-lifecycle" data-live>${svgLifecycle(layoutLifecycle(m), { active: sf })}</div>
-    <h2>${sf === 'archived' ? 'Archived changes' : 'Active changes'} <span class="hn">${sf ? `showing ${esc(STATUS[sf])} only<button class="small" id="stageclear">show all</button>` : 'grouped by state'}</span></h2>
+    <h2>${sf === 'archived' ? 'Archived changes' : 'Active changes'} <span class="c num">${sf ? pool.filter(c => c.status === sf).length : m.active.length}</span><span class="hn">${sf ? `showing ${esc(STATUS[sf])} only<button class="small" id="stageclear">show all</button>` : 'grouped by state'}</span></h2>
     ${sf ? (pool.some(c => c.status === sf) ? ledger : `<div class="empty">No change is at the ${esc(STATUS[sf])} stage.</div>`) : m.active.length ? ledger : '<div class="empty">No active changes. Everything is archived, or nothing has been proposed yet.</div>'}
-    <div class="two">
-      ${nextUp ? `<div><h2>Next open tasks <span class="hn">first three per change in progress</span></h2>${nextUp}</div>` : ''}
-      <div><h2>Needs attention <span class="hn">${m.issues.length ? `${nWarn} warnings, ${nInfo} notes` : 'nothing flagged'}</span></h2>${issues}</div>
-    </div>
+    <h2>Needs attention <span class="c num">${m.issues.length}</span><span class="hn">${m.issues.length ? `${plural(nWarn, 'warning')}, ${plural(nInfo, 'note')}` : 'nothing flagged'}</span></h2>
+    ${issues}
     ${impactHead}
     ${impact}
-    <h2>Capabilities <span class="hn">${plural(m.specs.length, 'spec')}${m.ghostCaps.length ? `, ${m.ghostCaps.length} proposed` : ''}</span></h2>
+    <h2>Capabilities <span class="c num">${m.specs.length}</span>${m.ghostCaps.length ? `<span class="hn">${m.ghostCaps.length} more proposed by active changes</span>` : ''}</h2>
     <div class="capgrid">${caps || '<div class="empty">No specs yet.</div>'}</div>
-    <h2>History <span class="hn">archived changes, newest first</span></h2>
+    <h2>History <span class="c num">${m.archived.length}</span><span class="hn">archived changes, newest first</span></h2>
     ${timeline}`;
 }
 
@@ -1581,28 +1828,34 @@ function renderSpecs() {
   const remsFor = r => sp.pendingRemoves.filter(p => norm(p.curName) === norm(r.name));
   const rensFor = r => sp.pendingRenames.filter(p => norm(p.r.from) === norm(r.name));
   const reqs = sp.requirements.filter(r => !f || r.name.toLowerCase().includes(f) || r.text.toLowerCase().includes(f) || r.scenarios.some(s => s.name.toLowerCase().includes(f)));
+  const compact = state.compactLineage;
+  const cols = layoutLineageColumns(sp), step = compact ? LINEAGE_MARKS.step : LINEAGE_FULL.step;
+  let anyLineage = false;
   const reqHtml = reqs.map(r => {
     const mods = modsFor(r), rems = remsFor(r), rens = rensFor(r);
     const badges = [...mods.map(p => `<a class="badge mod" href="${link('changes', p.ch.key, 'deltas')}" title="Modified by ${esc(p.ch.name)}">modified in ${esc(p.ch.name)}</a>`), ...rems.map(p => `<a class="badge rem" href="${link('changes', p.ch.key, 'deltas')}">removed in ${esc(p.ch.name)}</a>`), ...rens.map(p => `<a class="badge ren" href="${link('changes', p.ch.key, 'deltas')}" title="New name: ${esc(p.r.to)}">renamed in ${esc(p.ch.name)}</a>`)].join(' ');
-    const lin = layoutLineage(sp, r);
-    const extra = lin.events.length ? `<div class="dia dia-lineage">${svgLineage(lin)}</div>` : '';
-    return requirementHtml(r, `spec:${sp.id}:${r.name}`, { badges, cls: rems.length ? 'removed' : '', extra });
+    const lin = layoutLineage(sp, r, cols, step);
+    anyLineage = anyLineage || lin.events.length > 0;
+    const timeline = lin.events.length ? `<div class="dia dia-lineage">${compact ? svgLineageMarks(lin) : svgLineage(lin)}</div>` : '';
+    return requirementHtml(r, `spec:${sp.id}:${r.name}`, { badges, cls: rems.length ? 'removed' : '', timeline });
   }).join('');
   const pendingAdds = sp.pendingAdds.filter(p => !f || p.r.name.toLowerCase().includes(f)).map(p => requirementHtml(p.r, `spec:${sp.id}:+${p.ch.key}:${p.r.name}`, { badges: `<a class="badge add" href="${link('changes', p.ch.key, 'deltas')}">added in ${esc(p.ch.name)}</a>`, cls: 'pending' })).join('');
   const nScen = sp.requirements.reduce((n, r) => n + r.scenarios.length, 0);
   const pend = sp.pendingAdds.length + sp.pendingMods.length + sp.pendingRemoves.length + sp.pendingRenames.length;
-  const cells = [[sp.requirements.length, 'requirements'], [nScen, 'scenarios'], [pend, 'pending edits', sp.changes.length ? `in ${plural(sp.changes.length, 'change')}` : ''], [sp.history.length, 'archived changes', sp.history[0]?.archivedDate ? `last on ${sp.history[0].archivedDate}` : '']];
+  const cells = [[sp.requirements.length, 'requirements'], [nScen, 'scenarios'], [pend, 'pending requirement changes'], [sp.history.length + sp.changes.length, 'changes involved', sp.history.length + sp.changes.length ? `${sp.history.length} merged, ${sp.changes.length} pending` : '']];
   const pendRow = sp.changes.length ? `<div class="row" style="margin:0 0 6px"><span class="small muted">Pending changes</span>${sp.changes.map(c => `<a class="tag" href="${link('changes', c.key, 'deltas')}">${esc(c.name)} ${deltaBadges(c.deltas.find(d => d.capability === sp.id))}</a>`).join('')}</div>` : '';
   const hist = sp.history.length ? `<p class="small muted" style="margin:6px 0 0">Shaped by ${sp.history.map(c => `<a href="${link('changes', c.key)}">${esc(c.name)}</a>`).join(', ')}.</p>` : '';
   return `<div class="split">${side}<section>
-    ${pageHead(esc(sp.id), [`<span class="path">${esc(sp.path)}</span>`, sp.mtime && `updated ${ago(sp.mtime)}`], cells)}
+    ${pageHead(esc(sp.id), [`<span class="path">${esc(sp.path)}</span>`, sp.mtime && `updated ${ago(sp.mtime)}`], cells, 'stack')}
     ${sp.purpose ? `<div class="md">${md(sp.purpose)}</div>` : ''}
     ${pendRow || hist ? `<div style="margin-top:14px">${pendRow}${hist}</div>` : ''}
     ${sp.other.length ? `<div class="reqs" style="margin-top:16px">${sp.other.map(o => `<details class="req" data-key="spec:${esc(sp.id)}:§${esc(o.title)}" ${state.open.has(`spec:${sp.id}:§${o.title}`) ? 'open' : ''}><summary><span class="rn">${esc(o.title)}</span><span class="rm">section</span></summary><div class="rb md">${md(o.body)}</div></details>`).join('')}</div>` : ''}
-    <div class="h2row"><h2>Requirements</h2><div class="row"><input type="search" id="reqsearch" placeholder="Search requirements" aria-label="Search requirements" value="${esc(state.reqFilter || '')}" style="width:220px"><button class="small" data-expand="1">Expand all</button><button class="small" data-expand="0">Collapse all</button></div></div>
-    ${reqHtml ? `<div class="reqs">${reqHtml}</div>` : '<div class="empty">No requirement matches.</div>'}
-    ${pendingAdds ? `<h2>Proposed additions <span class="hn">from active changes, not yet in the spec</span></h2><div class="reqs">${pendingAdds}</div>` : ''}
+    <div class="h2row"><h2>Requirements <span class="c num">${sp.requirements.length}</span></h2><div class="row"><input type="search" id="reqsearch" placeholder="Search requirements" aria-label="Search requirements" value="${esc(state.reqFilter || '')}" style="width:220px"><label class="tgl small lineage-switch" title="Draw the timelines as marks only, with change names and dates once in an axis row"><input type="checkbox" id="compactlineage" ${compact ? 'checked' : ''}> Compact view</label><button class="small" data-expand="1">Expand all</button><button class="small" data-expand="0">Collapse all</button></div></div>
+    ${compact && anyLineage ? `<div class="lineage-axis"><div class="dia dia-lineage">${svgLineageAxis(cols, step)}</div></div>` : ''}
+    ${reqHtml ? `<div class="reqs${compact ? ' lineage-compact' : ''}">${reqHtml}</div>` : '<div class="empty">No requirement matches.</div>'}
+    ${pendingAdds ? `<h2>Proposed additions <span class="c num">${sp.pendingAdds.length}</span><span class="hn">from active changes, not yet in the spec</span></h2><div class="reqs">${pendingAdds}</div>` : ''}
     ${sp.design ? `<h2>Design</h2><div class="md">${md(sp.design)}</div>` : ''}
+    ${anyLineage ? renderLineageLegend() : ''}
   </section></div>`;
 }
 
@@ -1614,7 +1867,8 @@ function renderChanges() {
   const side = `<aside class="side"><h4><span>Active</span><span class="num">${m.active.length}</span></h4>${m.active.map(item).join('') || '<div class="empty small">None.</div>'}<h4><span>Archived</span><span class="num">${m.archived.length}</span></h4>${m.archived.map(item).join('') || '<div class="empty small">None.</div>'}</aside>`;
   if (!ch) return `<div class="split">${side}<div class="empty">No changes under changes/.</div></div>`;
   const tab = state.route.tab || 'proposal';
-  const tabs = [['proposal', 'Proposal'], ['tasks', `Tasks${ch.tasks ? `<span class="c">${ch.tasks.done}/${ch.tasks.total}</span>` : ''}`], ['deltas', `Spec deltas<span class="c">${ch.deltas.reduce((n, d) => n + d.count, 0)}</span>`], ch.design && ['design', 'Design'], ['files', `Files<span class="c">${ch.files.length}</span>`]].filter(Boolean);
+  // tabs follow the order the OpenSpec workflow writes the files: why, how, what, then the work
+  const tabs = [['proposal', 'Proposal'], ch.design && ['design', 'Design'], ['deltas', `Spec deltas<span class="c">${ch.deltas.length}</span>`], ['tasks', `Tasks${ch.tasks ? `<span class="c">${ch.tasks.done}/${ch.tasks.total}</span>` : ''}`], ['files', `Files<span class="c">${ch.files.length}</span>`, 'aside']].filter(Boolean);
   let body = '';
   if (tab === 'proposal') body = ch.proposal.raw ? `<div class="md">${md(ch.proposal.raw)}</div>` : '<div class="empty">This change has no proposal.md.</div>';
   else if (tab === 'tasks') body = renderTasks(ch);
@@ -1622,18 +1876,20 @@ function renderChanges() {
   else if (tab === 'design') body = `<div class="md">${md(ch.design)}</div>`;
   else if (tab === 'files') body = `<ul class="filelist">${ch.files.map(f => `<li>${esc(f.rel)}${f.mtime ? ` <span class="muted">${ago(f.mtime)}</span>` : ''}${f.text ? ` <span class="muted">${f.text.length.toLocaleString()} chars</span>` : ''}</li>`).join('')}</ul>${state.source.type === 'github' ? `<p class="small"><a href="https://github.com/${esc(state.source.repo.owner)}/${esc(state.source.repo.repo)}/tree/${esc(state.source.repo.ref)}/${esc(state.source.url.split('/tree/' + state.source.repo.ref + '/')[1] || '')}${esc(ch.dir)}" target="_blank" rel="noopener">Open this folder on GitHub</a></p>` : ''}`;
   const nDeltas = ch.deltas.reduce((n, d) => n + d.count, 0);
+  const breakdown = ['added', 'modified', 'removed', 'renamed'].map(k => [ch.deltas.reduce((n, d) => n + d[k].length, 0), k]).filter(([n]) => n).map(([n, k]) => `${n} ${k}`).join(', ');
   const cells = [
     [pill(ch), 'state'],
     ch.tasks ? [`${pct(ch.tasks.done, ch.tasks.total)}%`, 'tasks done', `${ch.tasks.done} of ${ch.tasks.total}`] : ['0', 'tasks', 'no tasks.md yet'],
-    [nDeltas, 'spec deltas', ch.deltas.length ? `across ${ch.deltas.length} ${ch.deltas.length === 1 ? 'capability' : 'capabilities'}` : ''],
+    [ch.deltas.length, ch.deltas.length === 1 ? 'spec delta' : 'spec deltas', ch.deltas.length ? 'one per capability touched' : ''],
+    [nDeltas, nDeltas === 1 ? 'requirement change' : 'requirement changes', breakdown],
     ch.archivedDate ? [esc(ch.archivedDate), 'archived'] : ch.created ? [esc(ch.created), 'created'] : null
   ];
   const metaParts = [`<span class="path">${esc(ch.dir)}</span>`, ch.created && ch.archivedDate && `created ${esc(ch.created)}`, ch.mtime && `updated ${ago(ch.mtime)}`, ch.schema && `schema ${esc(ch.schema)}`];
   return `<div class="split">${side}<section>
     ${pageHead(esc(ch.name), metaParts, cells)}
     ${ch.tasks && !ch.archived ? `<div class="row" style="gap:12px;margin-bottom:8px"><div style="flex:1">${bar(ch.tasks.done, ch.tasks.total, true)}</div></div>` : ''}
-    ${ch.deltas.length ? `<div class="row" style="gap:6px"><span class="small muted">Touches</span>${ch.deltas.map(d => `<a class="tag" href="${link('changes', ch.key, 'deltas')}">${esc(d.capability)} ${deltaBadges(d)}${m.specMap.has(d.capability) ? '' : ' <span class="badge new">new</span>'}</a>`).join('')}</div>` : ''}
-    <div class="tabs">${tabs.map(([t, l]) => `<a href="${link('changes', ch.key, t)}" class="${tab === t ? 'on' : ''}">${l}</a>`).join('')}</div>
+    ${ch.deltas.length ? `<div class="row" style="gap:6px"><span class="small">Spec deltas <span class="muted">${ch.archived ? `merged into these capabilities${ch.archivedDate ? ` on ${esc(ch.archivedDate)}` : ''}` : 'one per capability this change touches'}</span></span>${ch.deltas.map(d => `<a class="tag" href="${link('changes', ch.key, 'deltas')}">${esc(d.capability)} ${deltaBadges(d)}${m.specMap.has(d.capability) ? '' : ' <span class="badge new">new</span>'}</a>`).join('')}</div>` : ''}
+    <div class="tabs">${tabs.map(([t, l, cls]) => `<a href="${link('changes', ch.key, t)}" class="${[tab === t && 'on', cls].filter(Boolean).join(' ')}">${l}</a>`).join('')}</div>
     ${body}
   </section></div>`;
 }
@@ -1651,7 +1907,11 @@ function renderDeltas(ch) {
   const m = state.model;
   if (!ch.deltas.length) return '<div class="empty">This change carries no spec deltas: there is no specs/&lt;capability&gt;/spec.md inside it.</div>';
   const norm = s => s.trim().toLowerCase().replace(/\s+/g, ' ');
-  return ch.deltas.map(d => {
+  const n = plural(ch.deltas.length, 'spec delta');
+  const lead = `<p class="chain" style="margin-bottom:20px">${ch.archived
+    ? `${n}, one per capability. Each was this change’s specs/&lt;capability&gt;/spec.md. Archiving${ch.archivedDate ? ` on ${esc(ch.archivedDate)}` : ''} merged them into the capability specs, so the current spec of each capability below already includes these requirement changes.`
+    : `${n}, one per capability. Each is this change’s own specs/&lt;capability&gt;/spec.md and lists the requirements it adds, modifies, removes or renames in that capability. They are applied when the change is archived; until then the current specs do not include them.`}</p>`;
+  return lead + ch.deltas.map(d => {
     const sp = m.specMap.get(d.capability);
     const cur = name => sp?.requirements.find(r => norm(r.name) === norm(resolveDeltaName(d, name)));
     const block = (list, kind, label, cls) => list.map(r => {
@@ -1672,8 +1932,9 @@ function renderDeltas(ch) {
       return requirementHtml(r, `d:${ch.key}:${d.capability}:${kind}:${r.name}`, { badges, extra, cls: kind === 'removed' ? 'removed' : '' });
     }).join('');
     const ren = d.renamed.length ? `<div class="renames">${d.renamed.map(r => `<div class="row"><span class="badge ren">renamed</span><span>${esc(r.from)}</span><span class="muted">→</span><b>${esc(r.to)}</b>${!sp?.requirements.some(x => norm(x.name) === norm(r.from)) ? `<span class="badge gray" title="No requirement with the old name exists in the current spec">not in spec</span>` : ''}</div>`).join('')}</div>` : '';
-    const blocks = `${block(d.added, 'added', 'added', 'add')}${block(d.modified, 'modified', 'modified', 'mod')}${block(d.removed, 'removed', 'removed', 'rem')}`;
+    const blocks = DELTA_OPS.filter(o => o.key !== 'renamed').map(o => block(d[o.key], o.key, o.label, o.k)).join('');
     return `<section style="margin-bottom:28px"><div class="h2row"><h2>${sp ? `<a href="${link('specs', d.capability)}" style="color:inherit;text-decoration:none">${esc(d.capability)}</a>` : `${esc(d.capability)} <span class="badge new">new capability</span>`} <span class="row" style="gap:3px">${deltaBadges(d)}</span></h2><div class="row"><button class="small" data-expand="1">Expand all</button><button class="small" data-expand="0">Collapse all</button></div></div>
+      <div class="small muted row" style="gap:10px;margin-bottom:12px"><code>specs/${esc(d.capability)}/spec.md</code><span>${plural(d.count, 'requirement change')}</span>${sp ? `<a href="${link('specs', d.capability)}">${ch.archived ? 'current spec, which includes this delta' : 'current spec'}</a>` : '<span>new capability: this delta creates its spec</span>'}</div>
       ${d.purpose ? `<div class="md" style="margin-bottom:12px">${md(d.purpose)}</div>` : ''}
       ${blocks ? `<div class="reqs">${blocks}</div>` : ''}${ren}
       ${d.other.length ? `<div class="reqs" style="margin-top:12px">${d.other.map(o => `<details class="req" data-key="d:${esc(ch.key)}:${esc(d.capability)}:§${esc(o.title)}" ${state.open.has(`d:${ch.key}:${d.capability}:§${o.title}`) ? 'open' : ''}><summary><span class="rn">${esc(o.title)}</span><span class="rm">section</span></summary><div class="rb md">${md(o.body)}</div></details>`).join('')}</div>` : ''}
@@ -1686,13 +1947,27 @@ function renderProject() {
   const p = state.model.project; const c = p.config;
   const cfgKeys = Object.keys(c).filter(k => k !== '_raw' && k !== 'context');
   const cells = [[state.model.fileCount, 'files'], [p.looseChangeFiles.length, 'loose files under changes/'], [p.otherTop.length, 'other top-level files']];
-  return `${pageHead('Project', [esc(state.source.label), c.schema && `schema ${esc(String(c.schema))}`], cells)}
+  const os = state.source.openspec || {};
+  const osNote = os.version ? (os.kind === 'self' ? 'OpenSpec version: this repository is OpenSpec itself, from its own package.json.' : 'OpenSpec version from package.json next to openspec/.') : 'OpenSpec version not found: no package.json next to the openspec/ folder, or the folder was opened on its own.';
+  return `${pageHead('Project', [esc(state.source.label), os.version && `OpenSpec ${esc(os.version)}`, c.schema && `schema ${esc(String(c.schema))}`], cells)}
+    <div class="small muted">${osNote}</div>
     ${c._raw ? `<h2>config.yaml</h2>${cfgKeys.length ? `<div class="row" style="margin-bottom:12px">${cfgKeys.map(k => `<span class="tag"><b>${esc(k)}</b> ${esc(String(c[k]).split('\n')[0].slice(0, 60))}${String(c[k]).includes('\n') ? '…' : ''}</span>`).join('')}</div>` : ''}${c.context ? `<h3>Context</h3><pre>${esc(c.context)}</pre>` : ''}<details data-key="cfg:raw" ${state.open.has('cfg:raw') ? 'open' : ''}><summary class="small muted" style="cursor:pointer">Raw file</summary><pre>${esc(c._raw)}</pre></details>` : ''}
     ${p.md ? `<h2>project.md</h2><div class="md">${md(p.md)}</div>` : ''}
     ${p.agents ? `<h2>AGENTS.md</h2><div class="md">${md(p.agents)}</div>` : ''}
-    ${p.looseChangeFiles.length ? `<h2>Files directly under changes/</h2>${p.looseChangeFiles.map(f => `<h3>${esc(f.path)}</h3><div class="md">${md(f.text)}</div>`).join('')}` : ''}
-    ${p.otherTop.length ? `<h2>Other files</h2><ul class="filelist">${p.otherTop.map(f => `<li>${esc(f.path)}</li>`).join('')}</ul>` : ''}
+    ${p.looseChangeFiles.length ? `<h2>Files directly under changes/ <span class="c num">${p.looseChangeFiles.length}</span></h2>${p.looseChangeFiles.map(f => `<h3>${esc(f.path)}</h3><div class="md">${md(f.text)}</div>`).join('')}` : ''}
+    ${p.otherTop.length ? `<h2>Other files <span class="c num">${p.otherTop.length}</span></h2><ul class="filelist">${p.otherTop.map(f => `<li>${esc(f.path)}</li>`).join('')}</ul>` : ''}
     ${!c._raw && !p.md ? '<div class="empty">No project.md or config.yaml at the openspec root.</div>' : ''}`;
+}
+
+// ---------- help ----------
+function renderHelp() {
+  return `${pageHead('Help', ['how OpenSpec fits together'])}
+    <h2>How the pieces fit <span class="hn">${state.model ? `counts from ${esc(state.source.label)}` : 'load a repository to see its counts'}</span></h2>
+    <div class="dia dia-relations">${svgRelations(layoutRelations(state.model))}</div>
+    <h2>How work flows <span class="hn">the stages a change moves through</span></h2>
+    <div class="dia dia-lifecycle">${svgLifecycle(layoutLifecycle(null), { explainer: true })}</div>
+    <h2>Vocabulary <span class="hn">the six OpenSpec terms and how they fit together</span></h2>
+    ${renderVocab(state.model)}`;
 }
 
 // ---------- boot ----------
@@ -1701,7 +1976,7 @@ function renderProject() {
   parseHash();
   render();
   // programmatic loading hook (used for testing and for embedding): OSV.loadFiles([{path, text, mtime}], 'label')
-  window.OSV = { loadFiles: (files, label = 'in-memory') => applyLoad({ source: { type: 'files', label }, files }), state, parseSpec, parseDelta, parseTasks, buildModel, md, layoutLifecycle, layoutImpact, layoutLineage };
+  window.OSV = { loadFiles: (files, label = 'in-memory') => applyLoad({ source: { type: 'files', label }, files }), state, parseSpec, parseDelta, parseTasks, buildModel, openspecVersionFrom, md, layoutLifecycle, layoutImpact, layoutLineage, layoutRelations };
   // whole-page drop target
   document.body.addEventListener('dragover', e => { if (e.dataTransfer.types.includes('Files')) e.preventDefault(); });
   document.body.addEventListener('drop', async e => {

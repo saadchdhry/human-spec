@@ -61,6 +61,8 @@ python3 -m http.server 8080
 
 then open <http://localhost:8080/>. Served pages can also be installed as an app, which lets the browser remember folder permissions.
 
+**Hosted.** The repository carries no hosting configuration. The public instance is run by the maintainer; because the project is a static folder with no build step, any static host can serve a checkout as it is.
+
 ## Sources
 
 - **Local folder.** Click "Choose folder…" and pick the repository root, or the `openspec/` folder itself, or drop a folder anywhere on the page. Files are read in the browser and never uploaded. With "Live" on, the page re-reads the folder every 3 seconds and redraws when a file changes.

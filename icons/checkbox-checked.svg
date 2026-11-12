@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+<mask id="tick">
+<rect width="24" height="24" fill="#fff"/>
+<path d="M8 12.5l3 3 5.25-6.5" fill="none" stroke="#000" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/>
+</mask>
+<rect x="3.625" y="3.625" width="16.75" height="16.75" rx="2.25" fill="currentColor" mask="url(#tick)"/>
+</svg>

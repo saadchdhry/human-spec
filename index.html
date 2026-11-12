@@ -75,6 +75,7 @@ button.primary:hover{background:var(--ink-2);border-color:var(--ink-2)}
 button.ghost{border-color:transparent;background:transparent}
 button.ghost:hover{background:var(--well)}
 button.small{padding:2px 8px;font-size:12.5px}
+button>.ico.close{font-size:16px;margin:0 -3px}
 input[type=text],input[type=password],input[type=search]{background:var(--sheet);border:1px solid var(--rule);border-radius:var(--r);padding:6px 9px;width:100%}
 input[type=search]{appearance:none;-webkit-appearance:none}
 :focus-visible{outline:2px solid var(--accent);outline-offset:1px}
@@ -88,7 +89,7 @@ hr{border:0;border-top:1px solid var(--hair);margin:16px 0}
 /* top bar */
 .topbar{position:sticky;top:0;z-index:20;background:var(--sheet);border-bottom:1px solid var(--rule);display:flex;align-items:center;gap:18px;padding:0 22px;min-height:50px;flex-wrap:wrap}
 .brand{color:inherit;text-decoration:none;font-weight:600;font-stretch:90%;font-size:14.5px;letter-spacing:-.01em;display:flex;align-items:center;gap:9px;white-space:nowrap}
-.brand .mark{width:13px;height:16px;border:1.5px solid var(--ink);border-left-width:4px;border-radius:1px;display:inline-block}
+.brand>.ico{font-size:20px;color:var(--ink);margin:-2px -3.5px;flex:none}
 .nav{display:flex;gap:18px;align-self:stretch}
 .nav a{display:inline-flex;align-items:center;gap:5px;text-decoration:none;color:var(--ink-2);font-weight:500;border-bottom:2px solid transparent;margin-bottom:-1px;padding:0 1px;min-height:50px}
 .nav a:hover{color:var(--ink)}
@@ -99,7 +100,7 @@ hr{border:0;border-top:1px solid var(--hair);margin:16px 0}
 .src .chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--rule);border-radius:var(--r);padding:2px 8px 2px 9px;max-width:380px;white-space:nowrap;font:inherit;color:var(--ink-2);background:var(--sheet);cursor:pointer;line-height:1.6}
 .src .chip:hover,.src .chip[aria-expanded="true"]{background:var(--well)}
 .src .chip b{color:var(--ink);font-weight:600;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.chip .caret{width:5px;height:5px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:rotate(45deg);margin:-3px 0 0 1px;flex:none}
+.chip>.ico.chevron-down{font-size:14px;color:var(--muted);margin:0 -4px 0 -3px;flex:none}
 .menu{position:absolute;top:calc(100% + 4px);left:0;min-width:170px;background:var(--sheet);border:1px solid var(--rule);border-radius:var(--r);padding:4px;z-index:30;display:flex;flex-direction:column;box-shadow:0 8px 20px -8px rgba(27,35,64,.35)}
 .menu [role=menuitem]{display:block;width:100%;text-align:left;padding:6px 10px;border:0;background:none;border-radius:2px;color:var(--ink);text-decoration:none;font:inherit;font-size:13px;cursor:pointer;white-space:nowrap}
 .menu [role=menuitem]:hover{background:var(--well)}
@@ -108,12 +109,13 @@ hr{border:0;border-top:1px solid var(--hair);margin:16px 0}
 .ibtn:hover{color:var(--ink);background:var(--well)}
 button.ibtn{border:0;background:transparent}
 button.ibtn:hover{background:var(--well)}
-.dot{width:8px;height:8px;border-radius:1px;background:var(--muted);display:inline-block;flex:none}
-.dot.live{background:var(--good)}
-.dot.busy{background:var(--warn);animation:pulse 1s infinite}
-.dot.err{background:var(--crit)}
+.ibtn>.ico{font-size:15px;flex:none}
+.chip>.dot{font-size:16px;color:var(--muted);margin:-4px;flex:none}
+.chip>.dot.live{color:var(--good)}
+.chip>.dot.busy{color:var(--warn);animation:pulse 1s infinite}
+.chip>.dot.error{color:var(--crit)}
 @keyframes pulse{50%{opacity:.3}}
-@media (prefers-reduced-motion:reduce){.dot.busy{animation:none}.bar i{transition:none}.req>summary::before,.req>.rh::before{transition:none}}
+@media (prefers-reduced-motion:reduce){.chip>.dot.busy{animation:none}.bar i{transition:none}}
 label.tgl{display:inline-flex;align-items:center;gap:5px;cursor:pointer;user-select:none}
 label.tgl input{margin:0;accent-color:var(--ink)}
 label.sw input{appearance:none;-webkit-appearance:none;width:28px;height:16px;border-radius:8px;background:var(--rule);position:relative;cursor:pointer;flex:none;transition:background .15s}
@@ -175,13 +177,14 @@ h3{font-size:14.5px;margin:18px 0 8px;font-weight:600}
 .bar.done i{background:var(--good)}
 .bar.lg{height:8px}
 .pill{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:500;color:var(--ink-2);white-space:nowrap}
-.pill .dot{width:9px;height:9px}
-.pill.progress .dot{background:var(--accent)}
-.pill.complete .dot{background:var(--good)}
-.pill.archived .dot{background:var(--muted)}
-.pill.draft .dot{background:var(--warn)}
-.pill.untouched .dot{background:transparent;border:1.5px solid var(--muted)}
+.pill>.dot{font-size:18px;margin:-4.5px;flex:none}
+.pill.progress>.dot{color:var(--accent)}
+.pill.complete>.dot{color:var(--good)}
+.pill.archived>.dot{color:var(--muted)}
+.pill.draft>.dot{color:var(--warn)}
+.pill.untouched>.dot{color:var(--muted)}
 .badge{display:inline-block;font-size:11px;line-height:1.6;font-weight:600;font-stretch:92%;padding:0 6px;border-radius:2px;vertical-align:middle;white-space:nowrap;text-decoration:none}
+.badge>.ico{margin-right:1.5px}
 .badge.add{background:var(--op-added-soft);color:var(--op-added-ink)}
 .badge.mod{background:var(--op-modified-soft);color:var(--op-modified-ink)}
 .badge.rem{background:var(--op-removed-soft);color:var(--op-removed-ink)}
@@ -213,9 +216,9 @@ a.tag:hover{border-color:var(--ink-2);color:var(--ink)}
 
 /* attention */
 .issue{display:grid;grid-template-columns:16px 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--hair);font-size:13px}
-.issue .ic{width:16px;height:16px;border-radius:1px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#1b2340;background:var(--warn);margin-top:2px}
-.issue .ic.info{background:var(--accent-soft);color:var(--accent-ink)}
-.issue .ic.crit{background:var(--crit);color:#fff}
+.issue>.ico{display:block;font-size:21px;margin:-0.5px -2.5px -4.5px}
+.issue>.issue-warning{color:var(--warn)}
+.issue>.issue-info{color:var(--accent)}
 .issue a{white-space:nowrap}
 
 /* impact matrix */
@@ -243,10 +246,10 @@ a.tag:hover{border-color:var(--ink-2);color:var(--ink)}
 
 /* vocabulary */
 .ico{display:inline-block;width:1em;height:1em;vertical-align:-0.15em;background-color:currentColor;-webkit-mask:var(--ico) center/contain no-repeat;mask:var(--ico) center/contain no-repeat}
-.ico.op-added{color:var(--op-added)}
-.ico.op-modified{color:var(--op-modified)}
-.ico.op-removed{color:var(--op-removed)}
-.ico.op-renamed{color:var(--op-renamed)}
+.ico.op-added,.ico.op-added-pending{color:var(--op-added)}
+.ico.op-modified,.ico.op-modified-pending{color:var(--op-modified)}
+.ico.op-removed,.ico.op-removed-pending{color:var(--op-removed)}
+.ico.op-renamed,.ico.op-renamed-pending{color:var(--op-renamed)}
 .vocab{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:0 36px}
 .vocab .term{padding:12px 0;border-bottom:1px solid var(--hair)}
 .vocab .t{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
@@ -289,8 +292,9 @@ a.tag:hover{border-color:var(--ink-2);color:var(--ink)}
 .req>summary,.req>.rh{list-style:none;cursor:pointer;padding:10px 4px 10px 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .req>summary:hover,.req>.rh:hover{background:var(--well)}
 .req>summary::-webkit-details-marker{display:none}
-.req>summary::before,.req>.rh::before{content:"";width:6px;height:6px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:rotate(-45deg);transition:transform .15s;flex:none;margin:0 6px 0 8px}
-details.req[open]>summary::before,.req.open>.rh::before{transform:rotate(45deg)}
+.req>summary>.ico,.req>.rh>.ico{font-size:16px;color:var(--muted);transition:transform .15s;flex:none;margin:0 1px 0 3px}
+details.req[open]>summary>.ico,.req.open>.rh>.ico{transform:rotate(90deg)}
+@media (prefers-reduced-motion:reduce){.req>summary>.ico,.req>.rh>.ico{transition:none}}
 .req>summary .rn,.req>.rh .rn{font-weight:600;flex:1 1 auto;min-width:0}
 .req>summary .rm,.req>.rh .rm{font-size:12px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
 .req>.rb{padding:2px 0 18px 30px;font-family:var(--prose);font-size:15px;line-height:1.55;max-width:78ch}
@@ -317,9 +321,9 @@ details.req[open]>summary::before,.req.open>.rh::before{transform:rotate(45deg)}
 .md table{border-collapse:collapse;margin:10px 0;font-family:var(--sans);font-size:13px}.md th,.md td{border:1px solid var(--hair);padding:5px 9px;text-align:left;vertical-align:top}.md th{background:var(--well)}
 .md code{font-size:.85em}
 .md .wl{color:var(--accent-ink);border-bottom:1px dotted var(--accent-ink)}
-.cb{display:inline-block;width:13px;height:13px;border:1.5px solid var(--rule);border-radius:1px;vertical-align:-2px;margin-right:0;position:relative;flex:none}
-.cb.on{background:var(--good);border-color:var(--good)}
-.cb.on::after{content:"";position:absolute;left:3.5px;top:0.5px;width:3.5px;height:7px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.ico.cb{font-size:18px;vertical-align:-2px;margin:-2.5px;flex:none}
+.cb.checkbox{color:var(--rule)}
+.cb.checkbox-checked{color:var(--good)}
 
 /* tasks */
 .tsec{margin-bottom:22px}
@@ -331,7 +335,7 @@ details.req[open]>summary::before,.req.open>.rh::before{transform:rotate(45deg)}
 .tsec li{padding:6px 0;display:flex;gap:10px;align-items:flex-start;border-bottom:1px solid var(--hair)}
 .tsec li.done{color:var(--muted)}
 .tsec li.done .tx{text-decoration:line-through;text-decoration-color:var(--rule)}
-.tsec li .cb{margin-top:3px}
+.tsec li .cb{margin-top:.5px}
 .tsec li .id{font-variant-numeric:tabular-nums;font-size:12px;color:var(--muted);flex:none;min-width:30px;margin-top:1px}
 .tsec li.d1{padding-left:32px}.tsec li.d2{padding-left:60px}
 
@@ -341,6 +345,7 @@ details.req[open]>summary::before,.req.open>.rh::before{transform:rotate(45deg)}
 .diff ins{background:var(--good-soft);color:var(--good-ink);text-decoration:none}
 .renames{margin:8px 0;border-top:1px solid var(--rule)}
 .renames .row{padding:8px 0;border-bottom:1px solid var(--hair)}
+.renames .row>.ico{font-size:16px;flex:none}
 
 /* subtabs */
 .tabs{display:flex;gap:22px;border-bottom:1px solid var(--rule);margin:18px 0 18px;flex-wrap:wrap}
@@ -433,12 +438,7 @@ kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--rule);border-b
 .dia .bl{stroke:var(--rule);stroke-width:1.5}
 .dia .bl.pend{stroke-dasharray:4 3}
 .dia .mkbg{fill:var(--sheet)}
-.dia .mk{stroke-width:2}
-.dia .mk.k-add{fill:var(--op-added);stroke:var(--op-added)}
-.dia .mk.k-mod{fill:var(--sheet);stroke:var(--op-modified)}
-.dia .mk.k-ren{fill:var(--op-renamed-soft);stroke:var(--op-renamed)}
-.dia .mk.k-rem{fill:none;stroke:var(--op-removed);stroke-width:2.5}
-.dia .mk.pend{fill:var(--sheet);stroke-dasharray:2 2}
+.mk>.ico{display:block;font-size:24px}
 .dia .ld{font-size:11.5px;fill:var(--muted)}
 .dia .lr{font-size:11.5px;fill:var(--ink-2)}
 .dia .tk{stroke:var(--rule);stroke-width:1}
@@ -455,7 +455,7 @@ label.tgl.lineage-switch{font-size:12.5px;line-height:1.4;padding:2px 0;border:1
 </head>
 <body>
 <header class="topbar">
-  <a class="brand" href="#/overview" title="Overview"><span class="mark"></span>human-spec</a>
+  <a class="brand" href="#/overview" title="Overview"><i class="ico human-spec" aria-hidden="true"></i>human-spec</a>
   <nav class="nav" id="nav"></nav>
   <div class="src" id="srcbar"></div>
 </header>
@@ -536,7 +536,7 @@ function renderList(lines) {
     return `<${tag}>` + nodes.map(n => {
       let t = n.text, cb = '';
       const c = t.match(/^\[([ xX])\]\s*(.*)$/);
-      if (c) { cb = `<span class="cb ${c[1] !== ' ' ? 'on' : ''}"></span>`; t = c[2]; }
+      if (c) { cb = icon(c[1] !== ' ' ? 'checkbox-checked' : 'checkbox', 'cb'); t = c[2]; }
       return `<li class="${cb ? 'task' : ''}">${cb}${inline(t)}${rec(n.children)}</li>`;
     }).join('') + `</${tag}>`;
   };
@@ -1128,13 +1128,8 @@ function layoutLineage(sp, r, cols = layoutLineageColumns(sp), step = LINEAGE_FU
   return { events, width: step * cols.length, step, splitX: firstPending < 0 ? null : step * firstPending };
 }
 const lineageTip = e => `${deltaOp(e.kind).label}${e.kind === 'ren' ? ` from “${e.from}” to “${e.to}”` : ''} in ${e.change}${e.pending ? ' (pending)' : ` on ${e.date}`}`;
-function lineageMark(e, y) {
-  const { x } = e, c = `mk k-${e.kind}${e.pending ? ' pend' : ''}`;
-  if (e.kind === 'add') return `<circle class="${c}" cx="${x}" cy="${y}" r="5.5"/>`;
-  if (e.kind === 'mod') return `<circle class="${c}" cx="${x}" cy="${y}" r="5"/>`;
-  if (e.kind === 'ren') return `<path class="${c}" d="M${x} ${y - 7}l7 7l-7 7l-7 -7z"/>`;
-  return `<path class="${c}" d="M${x - 5} ${y - 5}l10 10M${x + 5} ${y - 5}l-10 10"/>`;
-}
+// the icon is HTML, so it sits in a foreignObject: a 24px box centred on the mark's point
+const lineageMark = (e, y) => `<foreignObject class="mk" x="${e.x - 12}" y="${y - 12}" width="24" height="24">${icon(deltaOp(e.kind).icon + (e.pending ? '-pending' : ''))}</foreignObject>`;
 function lineageBaseline(width, y, sx) {
   const x0 = 8, x1 = width - 8;
   return sx === null ? `<line class="bl" x1="${x0}" y1="${y}" x2="${x1}" y2="${y}"/>`
@@ -1503,13 +1498,6 @@ function renderNav() {
   $('#nav').innerHTML = items.map(([v, l]) => `<a href="${link(v)}" class="${state.route.view === v ? 'on' : ''}">${l}</a>`).join('');
 }
 const THEMES = ['light', 'dark', 'system'];
-const ICONS = {
-  light: '<svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="3.2"/><path d="M8 1.5v1.6M8 12.9v1.6M1.5 8h1.6M12.9 8h1.6M3.4 3.4l1.1 1.1M11.5 11.5l1.1 1.1M3.4 12.6l1.1-1.1M11.5 4.5l1.1-1.1"/></svg>',
-  dark: '<svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M13.5 9.8A5.6 5.6 0 0 1 6.2 2.5a5.6 5.6 0 1 0 7.3 7.3z"/></svg>',
-  system: '<svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.75" y="2.75" width="12.5" height="8.5" rx="1"/><path d="M5.5 13.5h5M8 11.25v2.25"/></svg>',
-  refresh: '<svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.3 8a5.3 5.3 0 1 1-1.55-3.75"/><path d="M13.6 2.4v3.2h-3.2"/></svg>',
-  github: '<svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M8 .2a8 8 0 0 0-2.53 15.59c.4.07.55-.17.55-.38v-1.49c-2.23.48-2.7-.95-2.7-.95-.36-.92-.89-1.17-.89-1.17-.73-.5.06-.49.06-.49.8.06 1.23.83 1.23.83.71 1.22 1.87.87 2.33.66.07-.52.28-.87.5-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.7 7.7 0 0 1 4 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8 8 0 0 0 8 .2z"/></svg>'
-};
 const REPO_URL = 'https://github.com/saadchdhry/human-spec';
 function themeSetting() { const t = localStorage.getItem('osv.theme'); return THEMES.includes(t) ? t : 'system'; }
 function applyTheme(t) {
@@ -1519,13 +1507,13 @@ function applyTheme(t) {
 let srcMenuOpen = false;
 function renderSrcBar() {
   const s = state.source;
-  const dot = `<span class="dot ${state.status === 'live' ? 'live' : state.status === 'busy' ? 'busy' : state.status === 'error' ? 'err' : ''}" title="${esc(state.statusMsg || state.status)}"></span>`;
+  const dot = `<i class="ico status-dot dot ${state.status}" title="${esc(state.statusMsg || state.status)}" aria-hidden="true"></i>`;
   const menu = srcMenuOpen ? `<div class="menu" role="menu"><button role="menuitem" id="srcbtn">${s ? 'Change source…' : 'Open source…'}</button>${s && s.url ? `<a role="menuitem" href="${esc(s.url)}" target="_blank" rel="noopener">Open on GitHub</a>` : ''}</div>` : '';
-  const chip = `<div class="srcmenu"><button class="chip" id="srcchip" aria-haspopup="menu" aria-expanded="${srcMenuOpen}" title="${s ? esc(s.label) : 'No source loaded'}">${dot}${s ? `<b>${esc(s.label)}</b>` : 'No source'}<span class="caret"></span></button>${menu}</div>`;
+  const chip = `<div class="srcmenu"><button class="chip" id="srcchip" aria-haspopup="menu" aria-expanded="${srcMenuOpen}" title="${s ? esc(s.label) : 'No source loaded'}">${dot}${s ? `<b>${esc(s.label)}</b>` : 'No source'}${icon('chevron-down')}</button>${menu}</div>`;
   const when = state.loadedAt ? `<span class="muted" title="${new Date(state.loadedAt).toLocaleString()}">${state.status === 'busy' ? esc(state.statusMsg || 'loading…') : 'read ' + ago(state.loadedAt)}</span>` : '';
   const auto = s && s.type !== 'files' && s.type !== 'sample' ? `<label class="tgl sw" title="${s.type === 'local' ? 'Re-read the folder every 3 s and redraw when a file changes' : 'Re-check GitHub every 90 s'}"><input type="checkbox" id="autochk" ${state.auto ? 'checked' : ''}> Live</label>` : '';
   const nextTheme = THEMES[(THEMES.indexOf(themeSetting()) + 1) % 3];
-  const icons = `<span class="igrp"><a class="ibtn" href="${REPO_URL}" target="_blank" rel="noopener" title="human-spec on GitHub" aria-label="human-spec on GitHub">${ICONS.github}</a>${s && s.type !== 'sample' ? `<button class="ibtn" id="refreshbtn" title="Read the source again now" aria-label="Reread now">${ICONS.refresh}</button>` : ''}<button class="ibtn" id="themebtn" title="Theme: ${{ light: 'light', dark: 'dark', system: 'follows the system' }[themeSetting()]}. Click for ${nextTheme}." aria-label="Theme: ${themeSetting()}">${ICONS[themeSetting()]}</button></span>`;
+  const icons = `<span class="igrp"><a class="ibtn" href="${REPO_URL}" target="_blank" rel="noopener" title="human-spec on GitHub" aria-label="human-spec on GitHub">${icon('github')}</a>${s && s.type !== 'sample' ? `<button class="ibtn" id="refreshbtn" title="Read the source again now" aria-label="Reread now">${icon('refresh')}</button>` : ''}<button class="ibtn" id="themebtn" title="Theme: ${{ light: 'light', dark: 'dark', system: 'follows the system' }[themeSetting()]}. Click for ${nextTheme}." aria-label="Theme: ${themeSetting()}">${icon('theme-' + themeSetting())}</button></span>`;
   $('#srcbar').innerHTML = `${chip}${when}${auto}${icons}`;
   $('#srcchip').onclick = e => { e.stopPropagation(); srcMenuOpen = !srcMenuOpen; renderSrcBar(); if (srcMenuOpen) $('#srcbtn')?.focus(); };
   $('#srcbtn') && ($('#srcbtn').onclick = () => { srcMenuOpen = false; renderSrcBar(); openSourceDialog(); });
@@ -1686,7 +1674,7 @@ function wireSourceControls(root, { inDialog } = {}) {
   idb.all().then(recs => {
     const el = $('#recentlocal', root); if (!el || !recs.length) return;
     recs.sort((a, b) => b.lastOpened - a.lastOpened);
-    el.innerHTML = `<span class="small muted">Recent</span>` + recs.map(r => `<button class="small" data-rec="${esc(r.id)}" title="Reopen (the browser may ask permission)">${esc(r.name)}</button><button class="small ghost" data-forget="${esc(r.id)}" title="Forget this folder">✕</button>`).join('');
+    el.innerHTML = `<span class="small muted">Recent</span>` + recs.map(r => `<button class="small" data-rec="${esc(r.id)}" title="Reopen (the browser may ask permission)">${esc(r.name)}</button><button class="small ghost" data-forget="${esc(r.id)}" title="Forget this folder">${icon('close')}</button>`).join('');
     for (const b of el.querySelectorAll('[data-rec]')) b.onclick = () => { closeDialog(); runLoad(() => reconnect(recs.find(r => r.id === b.dataset.rec))); };
     for (const b of el.querySelectorAll('[data-forget]')) b.onclick = async () => { await idb.del(b.dataset.forget); b.previousElementSibling.remove(); b.remove(); };
   });
@@ -1694,7 +1682,7 @@ function wireSourceControls(root, { inDialog } = {}) {
 function wireWelcome() { wireSourceControls(document); }
 function openSourceDialog() {
   const dlg = $('#dlg');
-  $('#dlgbody').innerHTML = `<div class="row spread"><h2>Open an OpenSpec source</h2><button class="ghost" id="dlgclose" aria-label="Close">✕</button></div>${sourceOptionsHtml()}`;
+  $('#dlgbody').innerHTML = `<div class="row spread"><h2>Open an OpenSpec source</h2><button class="ghost" id="dlgclose" aria-label="Close">${icon('close')}</button></div>${sourceOptionsHtml()}`;
   wireSourceControls(dlg, { inDialog: true });
   $('#dlgclose').onclick = closeDialog;
   dlg.showModal();
@@ -1703,17 +1691,17 @@ function closeDialog() { const d = $('#dlg'); if (d.open) d.close(); }
 
 // ---------- shared pieces ----------
 const STATUS = { progress: 'In progress', untouched: 'Not started', complete: 'Complete', draft: 'Drafting', archived: 'Archived' };
-const pill = ch => `<span class="pill ${ch.status}"><span class="dot"></span>${STATUS[ch.status]}</span>`;
+const pill = (st, label = STATUS[st]) => `<span class="pill ${st}">${icon(st === 'untouched' ? 'status-dot-empty' : 'status-dot', 'dot')}${label}</span>`;
 const bar = (done, total, lg) => `<div class="bar ${lg ? 'lg' : ''} ${total && done === total ? 'done' : ''}"><i style="width:${pct(done, total)}%"></i></div>`;
 const DELTA_OPS = [
-  { k: 'add', key: 'added', label: 'added', glyph: '+', icon: 'op-added' },
-  { k: 'mod', key: 'modified', label: 'modified', glyph: '~', icon: 'op-modified' },
-  { k: 'rem', key: 'removed', label: 'removed', glyph: '−', icon: 'op-removed' },
-  { k: 'ren', key: 'renamed', label: 'renamed', glyph: '↔', icon: 'op-renamed' }
+  { k: 'add', key: 'added', label: 'added', icon: 'op-added', badge: 'badge-added' },
+  { k: 'mod', key: 'modified', label: 'modified', icon: 'op-modified', badge: 'badge-modified' },
+  { k: 'rem', key: 'removed', label: 'removed', icon: 'op-removed', badge: 'badge-removed' },
+  { k: 'ren', key: 'renamed', label: 'renamed', icon: 'op-renamed', badge: 'badge-renamed' }
 ];
 const deltaOp = k => DELTA_OPS.find(o => o.k === k);
-const icon = name => `<i class="ico ${name}" aria-hidden="true"></i>`;
-const deltaBadges = d => DELTA_OPS.filter(o => d[o.key].length).map(o => `<span class="badge ${o.k}" title="${d[o.key].length} ${o.label}">${o.glyph}${d[o.key].length}</span>`).join('');
+const icon = (name, cls) => `<i class="ico ${name}${cls ? ' ' + cls : ''}" aria-hidden="true"></i>`;
+const deltaBadges = d => DELTA_OPS.filter(o => d[o.key].length).map(o => `<span class="badge ${o.k}" title="${d[o.key].length} ${o.label}">${icon(o.badge)}${d[o.key].length}</span>`).join('');
 const capTag = (id, exists) => `<a class="tag" href="${exists ? link('specs', id) : link('overview')}">${esc(id)}</a>`;
 // meta line: short facts separated by thin rules
 const meta = parts => `<p class="meta">${parts.filter(Boolean).map(p => `<span>${p}</span>`).join('')}</p>`;
@@ -1728,7 +1716,7 @@ function requirementHtml(r, key, { badges = '', cls = '', extra = '', timeline =
   const open = state.open.has(key);
   const id = `rb${++reqSeq}`;
   return `<div class="req ${cls}${open ? ' open' : ''}" data-key="${esc(key)}">
-    <div class="rh" role="button" tabindex="0" aria-expanded="${open}" aria-controls="${id}"><span class="rn">${esc(r.name)}</span>${badges}<span class="rm">${plural(r.scenarios.length, 'scenario')}</span></div>
+    <div class="rh" role="button" tabindex="0" aria-expanded="${open}" aria-controls="${id}">${icon('chevron-right')}<span class="rn">${esc(r.name)}</span>${badges}<span class="rm">${plural(r.scenarios.length, 'scenario')}</span></div>
     ${timeline}<div class="rb" id="${id}"${open ? '' : ' hidden'}>${extra}${r.reason ? `<div class="notice"><b>Reason:</b> ${inline(r.reason)}</div>` : ''}<div class="md">${md(r.text.replace(/\*\*Reason\*\*:?[\s\S]*?(\n\n|$)/, ''))}</div>${r.scenarios.map(scenarioHtml).join('')}</div>
   </div>`;
 }
@@ -1770,7 +1758,7 @@ function renderOverview() {
       <span class="caps">${ch.deltas.map(d => `<span class="tag">${esc(d.capability)} ${deltaBadges(d)}</span>`).join('')}</span>
       <span class="when">${ch.created ? 'created ' + esc(ch.created) : ch.mtime ? 'updated ' + ago(ch.mtime) : ''}</span>
     </a>`;
-  const ledger = `<div class="ledger">${groups.map(([st, t]) => { const list = pool.filter(c => c.status === st); return list.length ? `<div class="grp"><span class="pill ${st}"><span class="dot"></span>${t}</span><span class="num">${list.length}</span></div>${list.map(lrow).join('')}` : ''; }).join('')}</div>`;
+  const ledger = `<div class="ledger">${groups.map(([st, t]) => { const list = pool.filter(c => c.status === st); return list.length ? `<div class="grp">${pill(st, t)}<span class="num">${list.length}</span></div>${list.map(lrow).join('')}` : ''; }).join('')}</div>`;
   // impact matrix
   const capIds = [...m.specs.map(s => s.id), ...m.ghostCaps.map(g => g.id)];
   const withDeltas = m.active.filter(c => c.deltas.length);
@@ -1782,7 +1770,7 @@ function renderOverview() {
   const impact = iv === 'flow' ? `<div class="dia dia-impact">${svgImpact(impactL)}</div>` : matrix;
   // attention
   const nWarn = m.issues.filter(i => i.lvl === 'warn').length, nInfo = m.issues.filter(i => i.lvl === 'info').length;
-  const issues = m.issues.length ? `${m.issues.slice(0, 40).map(i => `<div class="issue"><span class="ic ${i.lvl === 'info' ? 'info' : ''}">${i.lvl === 'info' ? 'i' : '!'}</span><span>${i.text} <a href="${esc(i.href)}" class="small">open</a></span></div>`).join('')}${m.issues.length > 40 ? `<div class="small muted" style="padding-top:8px">${m.issues.length - 40} more not shown</div>` : ''}` : '<div class="empty">Deltas match the current specs, every requirement has scenarios, and no change is stuck.</div>';
+  const issues = m.issues.length ? `${m.issues.slice(0, 40).map(i => `<div class="issue">${icon(i.lvl === 'info' ? 'issue-info' : 'issue-warning')}<span>${i.text} <a href="${esc(i.href)}" class="small">open</a></span></div>`).join('')}${m.issues.length > 40 ? `<div class="small muted" style="padding-top:8px">${m.issues.length - 40} more not shown</div>` : ''}` : '<div class="empty">Deltas match the current specs, every requirement has scenarios, and no change is stuck.</div>';
   // capabilities
   const caps = m.specs.map(sp => {
     const pend = sp.pendingAdds.length + sp.pendingMods.length + sp.pendingRemoves.length + sp.pendingRenames.length;
@@ -1849,7 +1837,7 @@ function renderSpecs() {
     ${pageHead(esc(sp.id), [`<span class="path">${esc(sp.path)}</span>`, sp.mtime && `updated ${ago(sp.mtime)}`], cells, 'stack')}
     ${sp.purpose ? `<div class="md">${md(sp.purpose)}</div>` : ''}
     ${pendRow || hist ? `<div style="margin-top:14px">${pendRow}${hist}</div>` : ''}
-    ${sp.other.length ? `<div class="reqs" style="margin-top:16px">${sp.other.map(o => `<details class="req" data-key="spec:${esc(sp.id)}:§${esc(o.title)}" ${state.open.has(`spec:${sp.id}:§${o.title}`) ? 'open' : ''}><summary><span class="rn">${esc(o.title)}</span><span class="rm">section</span></summary><div class="rb md">${md(o.body)}</div></details>`).join('')}</div>` : ''}
+    ${sp.other.length ? `<div class="reqs" style="margin-top:16px">${sp.other.map(o => `<details class="req" data-key="spec:${esc(sp.id)}:§${esc(o.title)}" ${state.open.has(`spec:${sp.id}:§${o.title}`) ? 'open' : ''}><summary>${icon('chevron-right')}<span class="rn">${esc(o.title)}</span><span class="rm">section</span></summary><div class="rb md">${md(o.body)}</div></details>`).join('')}</div>` : ''}
     <div class="h2row"><h2>Requirements <span class="c num">${sp.requirements.length}</span></h2><div class="row"><input type="search" id="reqsearch" placeholder="Search requirements" aria-label="Search requirements" value="${esc(state.reqFilter || '')}" style="width:220px"><label class="tgl small lineage-switch" title="Draw the timelines as marks only, with change names and dates once in an axis row"><input type="checkbox" id="compactlineage" ${compact ? 'checked' : ''}> Compact view</label><button class="small" data-expand="1">Expand all</button><button class="small" data-expand="0">Collapse all</button></div></div>
     ${compact && anyLineage ? `<div class="lineage-axis"><div class="dia dia-lineage">${svgLineageAxis(cols, step)}</div></div>` : ''}
     ${reqHtml ? `<div class="reqs${compact ? ' lineage-compact' : ''}">${reqHtml}</div>` : '<div class="empty">No requirement matches.</div>'}
@@ -1878,7 +1866,7 @@ function renderChanges() {
   const nDeltas = ch.deltas.reduce((n, d) => n + d.count, 0);
   const breakdown = ['added', 'modified', 'removed', 'renamed'].map(k => [ch.deltas.reduce((n, d) => n + d[k].length, 0), k]).filter(([n]) => n).map(([n, k]) => `${n} ${k}`).join(', ');
   const cells = [
-    [pill(ch), 'state'],
+    [pill(ch.status), 'state'],
     ch.tasks ? [`${pct(ch.tasks.done, ch.tasks.total)}%`, 'tasks done', `${ch.tasks.done} of ${ch.tasks.total}`] : ['0', 'tasks', 'no tasks.md yet'],
     [ch.deltas.length, ch.deltas.length === 1 ? 'spec delta' : 'spec deltas', ch.deltas.length ? 'one per capability touched' : ''],
     [nDeltas, nDeltas === 1 ? 'requirement change' : 'requirement changes', breakdown],
@@ -1899,7 +1887,7 @@ function renderTasks(ch) {
   const secs = t.sections.map((s, si) => {
     const items = s.items.filter(i => !state.openOnly || !i.done);
     if (!items.length) return '';
-    return `<div class="tsec"><div class="th"><span class="n">${inline(s.title || 'Tasks')}</span><span class="num">${s.done}/${s.total}</span>${bar(s.done, s.total)}</div><ul>${items.map(i => `<li class="${i.done ? 'done' : ''} d${i.depth}"><span class="cb ${i.done ? 'on' : ''}"></span>${i.id ? `<span class="id">${esc(i.id)}</span>` : ''}<span class="tx">${inline(i.text)}</span></li>`).join('')}</ul></div>`;
+    return `<div class="tsec"><div class="th"><span class="n">${inline(s.title || 'Tasks')}</span><span class="num">${s.done}/${s.total}</span>${bar(s.done, s.total)}</div><ul>${items.map(i => `<li class="${i.done ? 'done' : ''} d${i.depth}">${icon(i.done ? 'checkbox-checked' : 'checkbox', 'cb')}${i.id ? `<span class="id">${esc(i.id)}</span>` : ''}<span class="tx">${inline(i.text)}</span></li>`).join('')}</ul></div>`;
   }).join('');
   return `<div class="row spread" style="margin-bottom:14px"><label class="tgl small"><input type="checkbox" id="openonly" ${state.openOnly ? 'checked' : ''}> Open tasks only</label><span class="small muted num">${t.total - t.done} open</span></div>${t.preamble ? `<div class="doc md small" style="margin-bottom:16px;font-size:14px">${md(t.preamble)}</div>` : ''}${secs || '<div class="empty">Every task is done.</div>'}`;
 }
@@ -1924,20 +1912,20 @@ function renderDeltas(ch) {
           const btn = (id, l) => `<button class="small ${v === id ? 'primary' : ''}" data-dv="${id}" data-key="${esc(key)}">${l}</button>`;
           extra = `<div class="row" style="margin-bottom:10px;gap:4px">${btn('diff', 'Diff')}${btn('proposed', 'Proposed')}${btn('current', 'Current')}</div>`;
           const plain = t => t.replace(/^### Requirement:.*\n+/, '').replace(/^#### Scenario:\s*/gm, 'Scenario: ').replace(/\*\*(WHEN|THEN|AND|GIVEN|BUT)\*\*/g, '$1').replace(/^\s*[-*]\s+/gm, '• ');
-          if (v === 'diff') return `<details class="req" data-key="d:${esc(key)}" ${state.open.has('d:' + key) ? 'open' : ''}><summary><span class="rn">${esc(r.name)}</span>${badges}<span class="rm">${r.scenarios.length} vs ${c.scenarios.length} scenarios</span></summary><div class="rb">${extra}${renderDiff(plain(c.raw), plain(r.raw))}</div></details>`;
+          if (v === 'diff') return `<details class="req" data-key="d:${esc(key)}" ${state.open.has('d:' + key) ? 'open' : ''}><summary>${icon('chevron-right')}<span class="rn">${esc(r.name)}</span>${badges}<span class="rm">${r.scenarios.length} vs ${c.scenarios.length} scenarios</span></summary><div class="rb">${extra}${renderDiff(plain(c.raw), plain(r.raw))}</div></details>`;
           if (v === 'current') return requirementHtml(c, `d:${key}`, { badges: `<span class="badge gray">current</span>`, extra });
         }
       }
       if (kind === 'added' && cur(r.name)) extra = `<div class="notice">A requirement with this name already exists in <b>${esc(d.capability)}</b>.</div>`;
       return requirementHtml(r, `d:${ch.key}:${d.capability}:${kind}:${r.name}`, { badges, extra, cls: kind === 'removed' ? 'removed' : '' });
     }).join('');
-    const ren = d.renamed.length ? `<div class="renames">${d.renamed.map(r => `<div class="row"><span class="badge ren">renamed</span><span>${esc(r.from)}</span><span class="muted">→</span><b>${esc(r.to)}</b>${!sp?.requirements.some(x => norm(x.name) === norm(r.from)) ? `<span class="badge gray" title="No requirement with the old name exists in the current spec">not in spec</span>` : ''}</div>`).join('')}</div>` : '';
+    const ren = d.renamed.length ? `<div class="renames">${d.renamed.map(r => `<div class="row"><span class="badge ren">renamed</span><span>${esc(r.from)}</span>${icon('arrow-right', 'muted')}<b>${esc(r.to)}</b>${!sp?.requirements.some(x => norm(x.name) === norm(r.from)) ? `<span class="badge gray" title="No requirement with the old name exists in the current spec">not in spec</span>` : ''}</div>`).join('')}</div>` : '';
     const blocks = DELTA_OPS.filter(o => o.key !== 'renamed').map(o => block(d[o.key], o.key, o.label, o.k)).join('');
     return `<section style="margin-bottom:28px"><div class="h2row"><h2>${sp ? `<a href="${link('specs', d.capability)}" style="color:inherit;text-decoration:none">${esc(d.capability)}</a>` : `${esc(d.capability)} <span class="badge new">new capability</span>`} <span class="row" style="gap:3px">${deltaBadges(d)}</span></h2><div class="row"><button class="small" data-expand="1">Expand all</button><button class="small" data-expand="0">Collapse all</button></div></div>
       <div class="small muted row" style="gap:10px;margin-bottom:12px"><code>specs/${esc(d.capability)}/spec.md</code><span>${plural(d.count, 'requirement change')}</span>${sp ? `<a href="${link('specs', d.capability)}">${ch.archived ? 'current spec, which includes this delta' : 'current spec'}</a>` : '<span>new capability: this delta creates its spec</span>'}</div>
       ${d.purpose ? `<div class="md" style="margin-bottom:12px">${md(d.purpose)}</div>` : ''}
       ${blocks ? `<div class="reqs">${blocks}</div>` : ''}${ren}
-      ${d.other.length ? `<div class="reqs" style="margin-top:12px">${d.other.map(o => `<details class="req" data-key="d:${esc(ch.key)}:${esc(d.capability)}:§${esc(o.title)}" ${state.open.has(`d:${ch.key}:${d.capability}:§${o.title}`) ? 'open' : ''}><summary><span class="rn">${esc(o.title)}</span><span class="rm">section</span></summary><div class="rb md">${md(o.body)}</div></details>`).join('')}</div>` : ''}
+      ${d.other.length ? `<div class="reqs" style="margin-top:12px">${d.other.map(o => `<details class="req" data-key="d:${esc(ch.key)}:${esc(d.capability)}:§${esc(o.title)}" ${state.open.has(`d:${ch.key}:${d.capability}:§${o.title}`) ? 'open' : ''}><summary>${icon('chevron-right')}<span class="rn">${esc(o.title)}</span><span class="rm">section</span></summary><div class="rb md">${md(o.body)}</div></details>`).join('')}</div>` : ''}
     </section>`;
   }).join('');
 }

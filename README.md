@@ -47,7 +47,7 @@ OpenSpec work moves through the same stages in every repository: a change is pro
 
 **Try it first.** The welcome page offers a Sample: the OpenSpec project's own `openspec/` folder, bundled in `sample/` under its MIT licence, so nothing has to be cloned or fetched. `sample/README.md` names the commit it was taken from and `sample/build.py` regenerates the bundle.
 
-**Icons.** The vocabulary and operation icons are the `.svg` files in `icons/`. The page loads them through `icons/icons.css`, where each one is inlined, because a page opened from disk cannot load mask images by path. After editing or adding an icon, run:
+**Icons.** Every icon the page draws is an `.svg` file in `icons/`. The page loads them through `icons/icons.css`, where each one is inlined, because a page opened from disk cannot load mask images by path. After editing or adding an icon, run:
 
 ```bash
 python3 icons/build.py

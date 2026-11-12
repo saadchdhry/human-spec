@@ -243,10 +243,10 @@ a.tag:hover{border-color:var(--ink-2);color:var(--ink)}
 
 /* vocabulary */
 .ico{display:inline-block;width:1em;height:1em;vertical-align:-0.15em;background-color:currentColor;-webkit-mask:var(--ico) center/contain no-repeat;mask:var(--ico) center/contain no-repeat}
-.ico.added{color:var(--op-added)}
-.ico.modified{color:var(--op-modified)}
-.ico.removed{color:var(--op-removed)}
-.ico.renamed{color:var(--op-renamed)}
+.ico.op-added{color:var(--op-added)}
+.ico.op-modified{color:var(--op-modified)}
+.ico.op-removed{color:var(--op-removed)}
+.ico.op-renamed{color:var(--op-renamed)}
 .vocab{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:0 36px}
 .vocab .term{padding:12px 0;border-bottom:1px solid var(--hair)}
 .vocab .t{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
@@ -1706,10 +1706,10 @@ const STATUS = { progress: 'In progress', untouched: 'Not started', complete: 'C
 const pill = ch => `<span class="pill ${ch.status}"><span class="dot"></span>${STATUS[ch.status]}</span>`;
 const bar = (done, total, lg) => `<div class="bar ${lg ? 'lg' : ''} ${total && done === total ? 'done' : ''}"><i style="width:${pct(done, total)}%"></i></div>`;
 const DELTA_OPS = [
-  { k: 'add', key: 'added', label: 'added', glyph: '+', icon: 'added' },
-  { k: 'mod', key: 'modified', label: 'modified', glyph: '~', icon: 'modified' },
-  { k: 'rem', key: 'removed', label: 'removed', glyph: '−', icon: 'removed' },
-  { k: 'ren', key: 'renamed', label: 'renamed', glyph: '↔', icon: 'renamed' }
+  { k: 'add', key: 'added', label: 'added', glyph: '+', icon: 'op-added' },
+  { k: 'mod', key: 'modified', label: 'modified', glyph: '~', icon: 'op-modified' },
+  { k: 'rem', key: 'removed', label: 'removed', glyph: '−', icon: 'op-removed' },
+  { k: 'ren', key: 'renamed', label: 'renamed', glyph: '↔', icon: 'op-renamed' }
 ];
 const deltaOp = k => DELTA_OPS.find(o => o.k === k);
 const icon = name => `<i class="ico ${name}" aria-hidden="true"></i>`;
